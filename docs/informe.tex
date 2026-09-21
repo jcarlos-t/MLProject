@@ -489,14 +489,12 @@ Este es probablemente el punto más crítico del análisis exploratorio:
     \item \textbf{Sesgo de plantilla por temporada.} Los ratings EA se publican al inicio de la temporada; el snapshot de una temporada no debe usarse para predecir la anterior. El pipeline ya usa un solo snapshot por temporada.
     \item \textbf{Sesgo de cobertura.} La Premier League (E0) aporta 3{,}800 partidos, mientras que la Pro League (B1) aporta 2{,}805; ligas con menos historia pueden quedar sub-representadas. Se mitiga con validación por liga y temporada.
     \item \textbf{Sesgo de cuotas.} Excluir cuotas de casas con muchos nulos y usar banderas de ausencia puede introducir sesgo si el patrón de ausencia no es aleatorio; precisamente por ello la ausencia se preserva como bandera binaria.
-    \item \textbf{Sesgo de privacidad.} No hay PII en el dataset: los identificadores de jugadores ya vienen seudonimizados por las fuentes originales.
 \end{itemize}
 
 \subsection{Hallazgos principales del EDA}
 Sintetizamos el EDA en seis hallazgos accionables para el modelado:
 
 \begin{enumerate}
-    \item El dataset consolidado contiene \textbf{30{,}182 partidos y 219 columnas útiles}, con cobertura temporal y de liga suficiente para modelar.
     \item La variable objetivo está \textbf{levemente desbalanceada} (H = 44.3\%, A = 30.9\%, D = 24.8\%); se usará como \textit{prior} y no se rebalanceará.
     \item La \textbf{calidad de los datos} es buena tras un proceso explícito de limpieza: se eliminaron 83 columnas de cuotas de baja cobertura y 3 columnas (\texttt{HFKC}, \texttt{AFKC}, \texttt{Referee}), se crearon 58 banderas de ausencia y se imputaron con KNN 15 columnas restantes, reduciendo el dataset de 222 a 133 columnas y quedando sin nulos.
     \item Las features más informativas pre-partido son las \textbf{cuotas medias de mercado} (representadas por \texttt{AvgH}/\texttt{AvgD}/\texttt{AvgA}, prácticamente equivalentes a las de cierre de Pinnacle), seguidas por las features de \textbf{squad quality} (\texttt{overall\_mean}, \texttt{top11\_mean} y \texttt{top3} por línea).
