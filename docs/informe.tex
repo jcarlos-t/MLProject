@@ -50,7 +50,7 @@ joseph.cose@utec.edu.pe}
 
 Este trabajo predice la probabilidad de cada resultado posible de un partido de fútbol (1X2: gana el local, empate, gana el visitante) usando exclusivamente información disponible antes del partido. El problema es de interés tanto académico como práctico: el mercado de apuestas es eficiente, porque las cuotas ya condensan casi toda la información disponible, y el fútbol tiene un componente de azar alto. Por eso, un modelo capaz de estimar probabilidades bien calibradas podría detectar apuestas cuyo valor esperado es positivo. El problema se plantea como una clasificación multiclase (3 clases) con salida probabilística; se definen las métricas de evaluación (log loss, Brier score, calibración) y se construye, limpia y audita un dataset propio de 30{,}182 partidos (219 columnas útiles), combinando datos de \textit{football-data.co.uk} (9 ligas europeas, 10 temporadas) con 36 columnas de calidad de plantilla derivadas de ratings de FIFA/EA. El análisis exploratorio identifica la señal predictiva principal, las cuotas medias de mercado (\texttt{AvgH}/\texttt{AvgD}/\texttt{AvgA}, prácticamente equivalentes a las cuotas de cierre de Pinnacle), y la señal complementaria de la calidad de plantilla (el once titular y el top-3 por línea). También confirma un desbalance leve de la variable objetivo y detecta el riesgo crítico de \textit{data leakage} temporal (fuga de información) por las variables post-partido.
 
-Como trabajo futuro se propone un \textit{pipeline} temporalmente correcto: \textit{features rolling} por equipo en orden cronológico, selección de \textit{features} con \textit{mutual information}, comparación de modelos (mayoritario, regresión logística, Random Forest, XGBoost, MLP y ensambles) y una evaluación estrictamente probabilística (log loss, Brier score y diagramas de calibración). Además se hará un \textit{backtest} de \textit{value bets} contra las cuotas de cierre. Se espera (i) superar el \textit{baseline} mayoritario (44\%) y acercarse al techo empírico de 55\% de la literatura \cite{tammouch2024}, y (ii) entregar un \textit{pipeline} reproducible, con validación cronológica y sin fugas de información. El repositorio del proyecto está disponible en \url{https://github.com/jcarlos-t/MLProject.git}.
+Como trabajo futuro se propone un \textit{pipeline} temporalmente correcto: \textit{features rolling} por equipo en orden cronológico, selección de \textit{features} con \textit{mutual information}, comparación de modelos (mayoritario, regresión logística, Random Forest, XGBoost, redes neuronales MLP y ensambles) y una evaluación estrictamente probabilística (log loss, Brier score y diagramas de calibración). Además se hará un \textit{backtest} de \textit{value bets} contra las cuotas de cierre. Se espera (i) obtener probabilidades calibradas con un desempeño estable a lo largo de las temporadas (sin \textit{concept drift} significativo en el \textit{split} cronológico), y (ii) entregar un \textit{pipeline} reproducible, con validación cronológica y sin fugas de información. El repositorio del proyecto está disponible en \url{https://github.com/jcarlos-t/MLProject.git}.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -106,7 +106,7 @@ Un \textit{value bet} surge cuando el modelo estima que un resultado es más pro
 \subsection{Preguntas de investigación e hipótesis}
 Planteamos las siguientes preguntas para guiar el proyecto:
 \begin{itemize}
-    \item ¿Es posible superar a un clasificador mayoritario ($\approx 44\%$) y aproximarse o superar el techo empírico de $\approx 55\%$ reportado en la literatura \cite{tammouch2024}?
+    \item ¿El desempeño del modelo (\textit{log loss} y \textit{accuracy}) se mantiene estable a lo largo de las temporadas en el \textit{split} cronológico, o se degrada en las temporadas más recientes por \textit{concept drift}?
     \item ¿La incorporación de features de calidad de plantilla (ratings FIFA/FC) mejora la predicción respecto a usar únicamente estadísticas históricas de partido?
     \item ¿Qué técnicas de selección de features (\textit{mutual information} vs.\ PCA) preservan mejor la señal predictiva, replicando el hallazgo de Tammouch et al. \cite{tammouch2024}?
     \item ¿Un ensemble de modelos calibrados permite detectar \textit{value bets} rentables al comparar contra cuotas de cierre?
@@ -140,6 +140,7 @@ La Tabla~\ref{tab:resumen} resume las dimensiones del dataset consolidado.
 \midrule
 Partidos & 30{,}182 \\
 Columnas crudas & 222 (219 útiles) \\
+Columnas tras la limpieza de nulos & 133 ($-89$) \\
 Ligas & 9 \\
 Temporadas & 10 (2016/17--2025/26) \\
 Equipos & 280 \\
@@ -153,6 +154,7 @@ Valores nulos tras limpieza & 0 \\
 La cobertura de \textit{squad quality} presenta ausencias concentradas en equipos ascendidos y en temporadas sin snapshot disponible.
 
 \subsection{Variables y variable objetivo}
+\label{sec:varbloques}
 El dataset se organiza en cinco bloques de variables. Cada bloque se detalla en una tabla con la variable y su significado: identificación (Tabla~\ref{tab:id}), resultado (Tabla~\ref{tab:res}), estadísticas de partido (Tabla~\ref{tab:post}), cuotas (Tabla~\ref{tab:cuotas}) y calidad de plantilla (Tabla~\ref{tab:squad}).
 
 \begin{table}[H]
@@ -327,7 +329,7 @@ La Fig.~\ref{fig:nulos_otras} resume los nulos de estas columnas antes de la lim
 \label{fig:nulos_otras}
 \end{figure}
 
-Tras la limpieza, el dataframe quedó sin valores nulos.
+Tras la limpieza, el dataframe quedó sin valores nulos. En total, la limpieza de nulos reduce el dataset de \textbf{222 a 133 columnas} ($-89$ en neto): se eliminan 148 columnas (3 artefactos \texttt{Unnamed}, 83 cuotas con más del 40\% de nulos, 58 cuotas convertidas a bandera y descartadas, y \texttt{HFKC}, \texttt{AFKC}, \texttt{Referee} y \texttt{Time}) y se añaden 59 (\texttt{Time\_hora} y las 58 banderas binarias \texttt{*\_Ausente}). Las 133 columnas finales se organizan en el mismo esquema de cinco bloques de variables de la Sección~\ref{sec:varbloques} y se usan como base del \textit{pipeline} de modelado.
 
 \textbf{Duplicados e integridad.} No se detectaron duplicados exactos de partidos. La clave compuesta \texttt{(Div, Season, Date, HomeTeam, AwayTeam)} identifica cada fila de forma única.
 
@@ -451,7 +453,7 @@ Estudiamos cómo las cuotas y la calidad de plantilla se relacionan con el resul
 \subsection{Análisis multivariado}
 En este apartado se interpreta cada gráfico multivariado: qué representa y qué información se extrae para el diseño de \textit{features}.
 
-\textbf{Matriz de correlación.} El mapa de color muestra la correlación de Pearson entre todas las variables numéricas y el detalle anotado se restringe a las variables clave (goles, tiros, cuotas medias y \textit{squad}). Se confirma \textbf{multicolinealidad} (redundancia): las cuotas del mismo mercado se mueven juntas y correlacionan con $|r|>0.9$ en la mayoría de pares, así que aportan información repetida. Esto justifica la imputación con KNN y motiva conservar una única referencia de mercado (\texttt{AvgH}/\texttt{AvgD}/\texttt{AvgA}) junto con las banderas \texttt{*\_Ausente} como representación compacta. Goles y tiros correlacionan positivamente ($r\approx0.6$--$0.7$) y la \textit{squad} correlaciona poco con las cuotas, lo que la convierte en señal complementaria.
+\textbf{Matriz de correlación.} La figura muestra la matriz de correlación de Pearson de un subconjunto de variables seleccionadas por relevancia predictiva (goles, tiros, cuotas medias y \textit{squad}); la matriz completa (128 columnas numéricas, no mostrada por legibilidad) confirma los mismos patrones. La selección se justifica por el análisis bivariado: las cuotas medias (\texttt{AvgH}/\texttt{AvgD}/\texttt{AvgA}) son las variables más informativas para \texttt{FTR} (Fig.~\ref{fig:cuotas}), las estadísticas de tiro correlacionan con los goles ($r\approx 0.6$--$0.7$), y la \textit{squad} se incluye por su valor complementario (Fig.~\ref{fig:squad}). Se confirma \textbf{multicolinealidad}: las cuotas del mismo mercado correlacionan con $|r|>0.9$, por lo que aportan información repetida; esto motiva conservar solo \texttt{AvgH}/\texttt{AvgD}/\texttt{AvgA} como representación compacta del mercado, junto con las banderas \texttt{\_Ausente}. Por otro lado, la \textit{squad} correlaciona poco con las cuotas, lo que la convierte en señal complementaria al mercado.
 
 \begin{figure}[H]
 \centering
@@ -496,7 +498,7 @@ Sintetizamos el EDA en seis hallazgos accionables para el modelado:
 \begin{enumerate}
     \item El dataset consolidado contiene \textbf{30{,}182 partidos y 219 columnas útiles}, con cobertura temporal y de liga suficiente para modelar.
     \item La variable objetivo está \textbf{levemente desbalanceada} (H = 44.3\%, A = 30.9\%, D = 24.8\%); se usará como \textit{prior} y no se rebalanceará.
-    \item La \textbf{calidad de los datos} es buena tras un proceso explícito de limpieza: se eliminaron 83 columnas de cuotas de baja cobertura, se crearon 58 banderas de ausencia y se imputaron con KNN 15 columnas restantes, quedando el dataset sin nulos.
+    \item La \textbf{calidad de los datos} es buena tras un proceso explícito de limpieza: se eliminaron 83 columnas de cuotas de baja cobertura y 3 columnas (\texttt{HFKC}, \texttt{AFKC}, \texttt{Referee}), se crearon 58 banderas de ausencia y se imputaron con KNN 15 columnas restantes, reduciendo el dataset de 222 a 133 columnas y quedando sin nulos.
     \item Las features más informativas pre-partido son las \textbf{cuotas medias de mercado} (representadas por \texttt{AvgH}/\texttt{AvgD}/\texttt{AvgA}, prácticamente equivalentes a las de cierre de Pinnacle), seguidas por las features de \textbf{squad quality} (\texttt{overall\_mean}, \texttt{top11\_mean} y \texttt{top3} por línea).
     \item El mayor riesgo metodológico es el \textbf{\textit{data leakage} temporal}: las estadísticas de partido deben desfasarse y el \textit{split} debe ser cronológico.
     \item Existen \textbf{outliers legítimos} en goles y tiros que no se eliminan; los outliers de cuotas son informativos y se conservan.
@@ -508,7 +510,7 @@ Con base en los hallazgos, se propone el siguiente plan de modelado:
     \item \textbf{Preprocesamiento temporal}: eliminar columnas post-partido, construir features \textit{rolling} (últimos 5 partidos) por equipo, y limpiar el dataset.
     \item \textbf{Ingeniería de features}: agregar features de \textit{squad quality} y cuotas de \textbf{apertura} de los tres mercados (1X2, Over/Under 2.5 y Asian Handicap), y relativizar por liga/temporada con z-scores (\texttt{*\_sq\_*\_z}) para corregir la inflación de ratings de EA a lo largo del tiempo.
     \item \textbf{Selección de features}: aplicar \texttt{mutual\_info\_classif} y comparar contra entrenar sin selección.
-    \item \textbf{Modelos}: \textit{baseline} mayoritario, regresión logística, Random Forest, XGBoost y MLP; ensemble por promedio de probabilidades.
+    \item \textbf{Modelos}: \textit{baseline} mayoritario, regresión logística, Random Forest, XGBoost, redes neuronales (MLP) y ensemble por promedio de probabilidades. Las redes neuronales se incluyen por su capacidad de capturar interacciones no lineales entre las cuotas de mercado, la calidad de plantilla y las \textit{rolling features} con salida \textit{softmax} sobre las tres clases.
     \item \textbf{Evaluación}: \textit{log loss}, Brier, accuracy y $F_1$ macro; diagramas de calibración; validación por temporada.
     \item \textbf{Backtest de \textit{value bets}}: comparar la probabilidad estimada por el modelo contra las cuotas de cierre, apostar solo cuando el valor esperado supera un umbral $\tau$ y calcular el ROI por apuesta.
 \end{enumerate}
