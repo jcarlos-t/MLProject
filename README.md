@@ -57,7 +57,7 @@ detectar **apuestas con valor (value bets)**.
 1. **Datos** (ver `data/DATA_DICTIONARY.md`):
    - `scripts/download/fetch_data.py` descarga crudos; `process_data.py` **solo consolida** → `matches.csv` (30,182 partidos, 9 ligas, 10 temporadas) y `players/raw/players_all.csv`.
    - `scripts/eda_y_analitycs/eda.ipynb` (EDA + analytics de partidos): decide calidad y exporta `matches_clean.csv` (183 cols tipadas).
-   - `scripts/eda_y_analitycs/eda_jugadores.ipynb` (EDA + analytics de jugadores): decide limpieza + features de jugadores y exporta `matches_sq.csv` (+38 features de squad quality: 9 crudas + 9 z-score por `(Season, Div)` + flag por lado).
+   - `scripts/eda_y_analitycs/eda_jugadores.ipynb` (EDA + analytics de jugadores): decide limpieza + features de jugadores y exporta `matches_sq.csv` (36 columnas de squad quality: 17 features + bandera `_sq_mapped` por lado; las versiones z-score se calculan en el modelado).
    - Diccionario completo de columnas en `DATA_DICTIONARY.md`.
 2. **Feature engineering**:
    - Rolling / lagged por equipo: media de los últimos 5 partidos de goles (a favor/en contra), tiros, tiros a puerta, corners, faltas, tarjetas, puntos, fuerza defensiva (clean sheets). Esto respeta el requisito de "solo información previa".
@@ -98,7 +98,7 @@ ML_Project/
 ├── data/
 │   ├── matches.csv            # 30,182 partidos, 186 columnas (consolidado crudo)
 │   ├── matches_clean.csv      # base tipada de partidos (183 cols, lo genera eda.ipynb)
-│   ├── matches_sq.csv         # +38 features de squad quality (224 cols, lo genera eda_jugadores)
+│   ├── matches_sq.csv      # squad quality consolidado: 222 cols (219 útiles), 36 col. de squad
 │   ├── raw/                   # 90 CSVs de football-data.co.uk
 │   └── players/               # snapshots Kaggle, players_all, normalized, squad_quality, club_map
 ├── scripts/
