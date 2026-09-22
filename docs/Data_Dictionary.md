@@ -35,8 +35,8 @@ Generado por `scripts/download/process_data.py`: **join** de `matches.csv` con l
 - **30,182 filas × 222 columnas** = 186 del partido + 36 de plantilla (17×2 lados + 2 flags).
 - Las columnas vienen tipadas (int/float/str). Algunas columnas de partido se registran como
   `float` pero son conteos enteros (p. ej. `HS`); las cuotas son `float` continuas.
-- Los relativos `_z` (z-score por `Season|Div` que corrigen la inflación de ratings de EA)
-  **no vienen aquí**: se calculan en `scripts/eda/eda_jugadores.ipynb`.
+- Las features derivadas de plantilla (ventaja neta `DIF_sq_top11`) **no vienen aquí**: se
+  construyen en el feature engineering (`scripts/eda/feature.ipynb`).
 
 ### 1.1 Identificación del partido
 
@@ -69,7 +69,7 @@ Generado por `scripts/download/process_data.py`: **join** de `matches.csv` con l
 
 ### 1.3 Estadísticas de partido (post-partido)
 
-> ⚠️ Información **after the match**: para el modelo usarlas **desfazadas** (media rolling de los últimos N partidos por equipo), nunca el valor del propio partido.
+> Información **after the match**: para el modelo usarlas **desfazadas** (media rolling de los últimos N partidos por equipo), nunca el valor del propio partido.
 
 | Campo | Tipo | Ejemplo real | Únicos | Nulos | Descripción |
 |---|---|---|---|---|---|

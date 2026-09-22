@@ -54,14 +54,15 @@ detectar **apuestas con valor (value bets)**.
 
 ### Pipeline
 
-1. **Datos** (ver `data/DATA_DICTIONARY.md`):
-   - `scripts/download/fetch_data.py` descarga crudos; `process_data.py` **solo consolida** → `matches.csv` (30,182 partidos, 9 ligas, 10 temporadas) y `players/raw/players_all.csv`.
-   - `scripts/eda_y_analitycs/eda.ipynb` (EDA + analytics de partidos): decide calidad y exporta `matches_clean.csv` (183 cols tipadas).
-   - `scripts/eda_y_analitycs/eda_jugadores.ipynb` (EDA + analytics de jugadores): decide limpieza + features de jugadores y exporta `matches_sq.csv` (36 columnas de squad quality: 17 features + bandera `_sq_mapped` por lado; las versiones z-score se calculan en el modelado).
-   - Diccionario completo de columnas en `DATA_DICTIONARY.md`.
+1. **Datos** (ver `docs/Data_Dictionary.md`; guía de reproducción en `scripts/download/README.md`):
+   - `scripts/download/fetch_data.py` descarga crudos -> `scripts/data/raw/` (90 CSVs de partidos, football-data.co.uk) y `scripts/data/players/raw/` (10 snapshots de ratings de jugadores, Kaggle).
+   - `scripts/download/process_data.py` **solo consolida** -> `matches.csv` (30,182 partidos, 9 ligas, 10 temporadas), `players/raw/players_all.csv` y `matches_sq.csv` (base unificada).
+   - `scripts/eda/eda.ipynb` (EDA): limpia la base unificada (nulos, banderas `*_Ausente`, imputación KNN, `Time_hora`) y exporta `matches_clean.csv` (dataset limpio, sin nulos).
+   - `scripts/eda/feature.ipynb` (feature engineering): parte del dataset limpio, construye features de historial (rolling últimos 5), squad (`DIF_sq_top11`) y selección con `mutual_info_classif` (top 40), y exporta `dataset_final.csv`.
+   - Diccionario completo de columnas en `docs/Data_Dictionary.md`.
 2. **Feature engineering**:
    - Rolling / lagged por equipo: media de los últimos 5 partidos de goles (a favor/en contra), tiros, tiros a puerta, corners, faltas, tarjetas, puntos, fuerza defensiva (clean sheets). Esto respeta el requisito de "solo información previa".
-   - Squad quality directa (pre-temporada): `*_sq_overall_mean`, `top11_mean`, `*_top_mean` por línea + versión relativa `_z` (decisión en `eda_jugadores.ipynb`: **usar las `_z`**).
+   - Squad quality directa (pre-temporada): se conserva `*_sq_top11_mean` (media del once titular) por lado + banderas `*_sq_mapped`, y se crea la ventaja neta `DIF_sq_top11 = local − visitante` (decisión en `feature.ipynb`).
    - Home advantage: features separadas para local y visitante.
 3. **Selección de features**: `mutual_info_classif` sobre el total de features; comparar con entrenar sin selección.
 4. **Modelos**:
@@ -93,20 +94,26 @@ detectar **apuestas con valor (value bets)**.
 ```
 ML_Project/
 ├── README.md                  # este documento
-├── DATA_DICTIONARY.md         # diccionario de datos (todas las columnas)
-├── data.md                    # documentación general de datos y reproducción
-├── data/
-│   ├── matches.csv            # 30,182 partidos, 186 columnas (consolidado crudo)
-│   ├── matches_clean.csv      # base tipada de partidos (183 cols, lo genera eda.ipynb)
-│   ├── matches_sq.csv      # squad quality consolidado: 222 cols (219 útiles), 36 col. de squad
-│   ├── raw/                   # 90 CSVs de football-data.co.uk
-│   └── players/               # snapshots Kaggle, players_all, normalized, squad_quality, club_map
+├── requirements.txt           # dependencias pinneadas (Python)
+├── docs/
+│   ├── informe.tex            # paper del proyecto (IEEEtran)
+│   ├── Data_Dictionary.md     # diccionario de datos (todas las columnas)
+│   └── figures/               # figuras del EDA usadas por el informe
 ├── scripts/
 │   ├── download/
+│   │   ├── README.md          # guía de reproducibilidad de los datos
 │   │   ├── fetch_data.py      # descarga de datos crudos
 │   │   └── process_data.py    # solo consolidación de crudos
-│   └── eda_y_analitycs/       # notebooks unificados (EDA + analytics):
-│                              #   eda.ipynb (partidos), eda_jugadores.ipynb (jugadores)
+│   ├── eda/
+│   │   ├── eda.ipynb          # EDA de partidos -> exporta matches_clean.csv (figuras del informe)
+│   │   └── feature.ipynb      # feature engineering sobre matches_clean -> dataset_final.csv
+│   └── data/                  # generado por los scripts (gitignored)
+│       ├── matches.csv        # 30,182 partidos, 186 columnas (consolidado crudo)
+│       ├── matches_sq.csv     # base unificada: 222 cols (219 útiles), 36 de squad
+│       ├── matches_clean.csv  # dataset limpio, sin nulos (lo genera eda.ipynb)
+│       ├── dataset_final.csv  # 40 features top-MI + target (lo genera feature.ipynb)
+│       ├── raw/               # 90 CSVs de football-data.co.uk
+│       └── players/           # snapshots Kaggle, normalized, squad_quality, club_map
 └── notebooks/                 # (pendiente: modelado final, backtest)
 ```
 
@@ -116,19 +123,15 @@ ML_Project/
 
 ```bash
 python -m venv .venv
-.venv/bin/pip install pandas rapidfuzz kagglehub
+.venv/bin/pip install -r requirements.txt
 
+# 1) Datos (guía detallada en scripts/download/README.md)
 .venv/bin/python scripts/download/fetch_data.py    # descarga data/raw y data/players/raw
-.venv/bin/python scripts/download/process_data.py  # consolida matches.csv + players_all.csv
+.venv/bin/python scripts/download/process_data.py  # consolida matches.csv, players_all.csv y matches_sq.csv
 
-# Notebooks (en orden, desde scripts/eda_y_analitycs/):
-#   1) eda_jugadores.ipynb    -> genera matches_sq.csv (features de jugadores + join + analytics)
-#   2) eda.ipynb              -> genera matches_clean.csv (base tipada) + analytics de partidos
+# 2) Notebooks (desde scripts/eda/, en este orden):
+#    1) eda.ipynb     -> limpia matches_sq.csv y exporta matches_clean.csv
+#    2) feature.ipynb -> feature engineering sobre matches_clean.csv y exporta dataset_final.csv
 ```
 
-> **Nota**: usar siempre `.venv/bin/python`. Sin `rapidfuzz` en el entorno, el mapeo de clubes (en `eda_jugadores.ipynb`) pierde ~26 mapeos fuzzy (cobertura de 97.1% → 96.0%).
-
-Shap
-IV
-
-ventanas por meses: std, mean, media, min, max, tendencia (pendientes)
+> **Nota**: usar siempre `.venv/bin/python`. El mapeo fuzzy de clubes se hace en `feature.ipynb` y requiere `rapidfuzz`; sin él la cobertura cae de ~97.1% a ~96.0%.
