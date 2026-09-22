@@ -387,19 +387,3 @@ Toda columna de cuota sigue el patrón `CODIGO + mercado + RESULTADO` (y una `C`
 > (el objetivo es probabilidad **calibrada**), se usa el desbalance como prior.
 
 ---
-
-## Notas
-
-- **Cómo se construyó**: `process_data.py` consolida partidos y snapshots, normaliza jugadores a
-  `(season, club, league, overall, pos)`, agrega squad por (season, club), mapea clubes EA →
-  `Div:Equipo` (`club_map.csv`, 2,279 mapeos, cobertura ~97.1% de los 60,364 team-slots) y une por
-  `Season|Div|Team`. Cada temporada usa **un solo snapshot** (el de su año): nunca se mezclan
-  versiones ni hay lookahead.
-- **Huecos de squad**: los slots sin mapeo quedan `NA` y `*_sq_mapped=0`; imputar para modelar.
-- **Cuotas**: son pre-partido → usables directas. **Ojo**: quitar el overround (pasar cuotas a
-  probabilidades dividiendo por `1/H+1/D+1/A`) antes de comparar con el modelo.
-- **Estadísticas de partido**: post-partido → usar rolling/lagged por equipo.
-- **Orden temporal**: split/backtest cronológico, nunca aleatorio.
-- **Temporada 2526** en curso: cobertura parcial de cuotas de cierre (ej. `PSCH` ~48%); decidir si
-  se incluye.
-- **Privacidad**: no hay PII en estos archivos; los ID de jugadores ya vienen seudonimizados por fuente.
