@@ -450,34 +450,21 @@ Estudiamos cómo las cuotas y la calidad de plantilla se relacionan con el resul
 \label{fig:squad}
 \end{figure}
 
-\subsection{Análisis multivariado}
-En este apartado se interpreta cada gráfico multivariado: qué representa y qué información se extrae para el diseño de \textit{features}.
+\subsection{Matriz de correlación}
+La Fig.~\ref{fig:corr_completa} muestra la matriz de correlación completa sobre las columnas numéricas del dataset, y la Fig.~\ref{fig:corr} su detalle sobre un subconjunto de variables seleccionadas por relevancia predictiva (goles, tiros, cuotas medias y \textit{squad}). Por el momento ambas matrices se presentan de forma preliminar; en \textit{feature engineering} se validarán con más detalle y se decidirá la selección final de variables redundantes. Se confirma \textbf{multicolinealidad}: las cuotas del mismo mercado correlacionan con $|r|>0.9$, por lo que aportan información repetida; esto motiva conservar solo \texttt{AvgH}/\texttt{AvgD}/\texttt{AvgA} como representación compacta del mercado, junto con las banderas \texttt{\_Ausente}. Por otro lado, la \textit{squad} correlaciona poco con las cuotas, lo que la convierte en señal complementaria al mercado.
 
-\textbf{Matriz de correlación.} La figura muestra la matriz de correlación de Pearson de un subconjunto de variables seleccionadas por relevancia predictiva (goles, tiros, cuotas medias y \textit{squad}); la matriz completa (128 columnas numéricas, no mostrada por legibilidad) confirma los mismos patrones. La selección se justifica por el análisis bivariado: las cuotas medias (\texttt{AvgH}/\texttt{AvgD}/\texttt{AvgA}) son las variables más informativas para \texttt{FTR} (Fig.~\ref{fig:cuotas}), las estadísticas de tiro correlacionan con los goles ($r\approx 0.6$--$0.7$), y la \textit{squad} se incluye por su valor complementario (Fig.~\ref{fig:squad}). Se confirma \textbf{multicolinealidad}: las cuotas del mismo mercado correlacionan con $|r|>0.9$, por lo que aportan información repetida; esto motiva conservar solo \texttt{AvgH}/\texttt{AvgD}/\texttt{AvgA} como representación compacta del mercado, junto con las banderas \texttt{\_Ausente}. Por otro lado, la \textit{squad} correlaciona poco con las cuotas, lo que la convierte en señal complementaria al mercado.
+\begin{figure}[H]
+\centering
+\includegraphics[width=\columnwidth]{eda_corr_completa.png}
+\caption{Matriz de correlación sobre las columnas numéricas del dataset.}
+\label{fig:corr_completa}
+\end{figure}
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=\columnwidth]{eda_corr_detalle.png}
 \caption{Detalle de la matriz de correlación entre variables clave de cuotas medias, plantilla y estadísticas. Las cuotas del mismo mercado tienen $|r|>0.9$.}
 \label{fig:corr}
-\end{figure}
-
-\textbf{\textit{Scatter matrix} o \textit{pairplot}.} Cada panel representa un par de variables clave (goles, cuotas medias, \textit{squad}) coloreado por \texttt{FTR} sobre una muestra de 5{,}000 partidos. Las tres clases se solapan sustancialmente (el fútbol es ruidoso), pero los pares de goles y de cuotas medias muestran la mejor separación parcial, mientras que la \textit{squad} (\texttt{diff\_sq\_top11}) aporta fronteras más difusas.
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=\columnwidth]{eda_pairplot.png}
-\caption{\textit{Pairplot} de variables seleccionadas coloreado por \texttt{FTR}. Las cuotas medias de mercado separan mejor las clases que las estadísticas crudas.}
-\label{fig:pair}
-\end{figure}
-
-\textbf{Análisis de componentes principales.} La PCA proyecta las cuotas medias de mercado (variables altamente correlacionadas) en dos componentes ortogonales. Los dos primeros componentes retienen prácticamente toda la varianza del mercado 1X2 (las cuotas son casi colineales): comprimir el mercado en pocas variables no pierde señal apreciable. No se observan \textit{clusters} separables: el extremo de PC1 (cuota de local muy baja, favorito claro) se concentra en victorias locales y la nube central corresponde a partidos equilibrados y empates, coherente con un problema de margen estrecho entre clases.
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=\columnwidth]{eda_pca.png}
-\caption{Proyección PCA en 2 componentes de las cuotas medias de mercado. No hay \textit{clusters}, coherente con un problema de margen estrecho.}
-\label{fig:pca}
 \end{figure}
 
 \subsection{Posibles sesgos y data leakage}
