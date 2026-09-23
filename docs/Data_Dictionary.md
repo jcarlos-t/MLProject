@@ -1,4 +1,4 @@
-# Diccionario de Datos — ML_Project (fútbol 1X2)
+# Diccionario de Datos
 
 Predicción probabilística del resultado de partidos de fútbol (local / empate / visitante).
 Fuente: **football-data.co.uk** (partidos y cuotas) + **Kaggle** (ratings de jugadores FIFA/FC).
@@ -28,7 +28,7 @@ Fuente: **football-data.co.uk** (partidos y cuotas) + **Kaggle** (ratings de jug
 ## 1. `scripts/data/matches_sq.csv` — Dataset principal (base unificada)
 
 Generado por `scripts/download/process_data.py`: **join** de `matches.csv` con la
-**squad quality** de local y visitante vía `Season|Div|Team` → `club_map.csv`
+**squad quality** de local y visitante vía `Season|Div|Team` -> `club_map.csv`
 (un snapshot por temporada, sin mezclar versiones ni lookahead).
 
 - **Una fila = 1 partido**. Cobertura: **9 ligas × 10 temporadas (2016/17–2025/26)**, y = **30,182 partidos**.
@@ -36,7 +36,7 @@ Generado por `scripts/download/process_data.py`: **join** de `matches.csv` con l
 - Las columnas vienen tipadas (int/float/str). Algunas columnas de partido se registran como
   `float` pero son conteos enteros (p. ej. `HS`); las cuotas son `float` continuas.
 - Las features derivadas de plantilla (ventaja neta `DIF_sq_top11`) **no vienen aquí**: se
-  construyen en el feature engineering (`scripts/eda/feature.ipynb`).
+  construyen en el feature engineering (`eda/feature.ipynb`).
 
 ### 1.1 Identificación del partido
 
@@ -391,15 +391,13 @@ Toda columna de cuota sigue el patrón `CODIGO + mercado + RESULTADO` (y una `C`
 ## Notas
 
 - **Cómo se construyó**: `process_data.py` consolida partidos y snapshots, normaliza jugadores a
-  `(season, club, league, overall, pos)`, agrega squad por (season, club), mapea clubes EA →
+  `(season, club, league, overall, pos)`, agrega squad por (season, club), mapea clubes EA ->
   `Div:Equipo` (`club_map.csv`, 2,279 mapeos, cobertura ~97.1% de los 60,364 team-slots) y une por
   `Season|Div|Team`. Cada temporada usa **un solo snapshot** (el de su año): nunca se mezclan
   versiones ni hay lookahead.
 - **Huecos de squad**: los slots sin mapeo quedan `NA` y `*_sq_mapped=0`; imputar para modelar.
-- **Cuotas**: son pre-partido → usables directas. **Ojo**: quitar el overround (pasar cuotas a
-  probabilidades dividiendo por `1/H+1/D+1/A`) antes de comparar con el modelo.
+- **Cuotas**: son pre-partido → usables directas.
 - **Estadísticas de partido**: post-partido → usar rolling/lagged por equipo.
 - **Orden temporal**: split/backtest cronológico, nunca aleatorio.
-- **Temporada 2526** en curso: cobertura parcial de cuotas de cierre (ej. `PSCH` ~48%); decidir si
-  se incluye.
+- **Temporada 2526** en curso: cobertura parcial de cuotas de cierre (ej. `PSCH` ~48%).
 - **Privacidad**: no hay PII en estos archivos; los ID de jugadores ya vienen seudonimizados por fuente.

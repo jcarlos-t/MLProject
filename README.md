@@ -1,10 +1,10 @@
-# ML_Project — Predicción de resultados de fútbol (1X2)
+# Predicción de resultados de fútbol (1X2)
 
 **Predicción probabilística del resultado de partidos de fútbol mediante Machine Learning**, usando únicamente información disponible **antes** del partido: forma de los equipos (últimos 5 partidos, desfazados), calidad de plantilla (ratings FIFA/FC de jugadores) y cuotas de apuestas pre-partido.
 
 ---
 
-## Contexto académico: qué dice la literatura
+## Contexto académico
 
 Este proyecto se apoya en dos trabajos de referencia que marcan la metodología, los modelos y la forma de evaluar.
 
@@ -44,7 +44,7 @@ Este proyecto se apoya en dos trabajos de referencia que marcan la metodología,
 
 ---
 
-## Qué vamos a hacer (metodología)
+## Metodología
 
 ### Objetivo
 
@@ -57,8 +57,8 @@ detectar **apuestas con valor (value bets)**.
 1. **Datos** (ver `docs/Data_Dictionary.md`; guía de reproducción en `scripts/download/README.md`):
    - `scripts/download/fetch_data.py` descarga crudos -> `scripts/data/raw/` (90 CSVs de partidos, football-data.co.uk) y `scripts/data/players/raw/` (10 snapshots de ratings de jugadores, Kaggle).
    - `scripts/download/process_data.py` **solo consolida** -> `matches.csv` (30,182 partidos, 9 ligas, 10 temporadas), `players/raw/players_all.csv` y `matches_sq.csv` (base unificada).
-   - `scripts/eda/eda.ipynb` (EDA): limpia la base unificada (nulos, banderas `*_Ausente`, imputación KNN, `Time_hora`) y exporta `matches_clean.csv` (dataset limpio, sin nulos).
-   - `scripts/eda/feature.ipynb` (feature engineering): parte del dataset limpio, construye features de historial (rolling últimos 5), squad (`DIF_sq_top11`) y selección con `mutual_info_classif` (top 40), y exporta `dataset_final.csv`.
+   - `eda/eda.ipynb` (EDA): limpia la base unificada (nulos, banderas `*_Ausente`, imputación KNN, `Time_hora`) y exporta `matches_clean.csv` (dataset limpio, sin nulos).
+   - `eda/feature.ipynb` (feature engineering): parte del dataset limpio, construye features de historial (rolling últimos 5), squad (`DIF_sq_top11`) y selección con `mutual_info_classif` (top 40), y exporta `dataset_final.csv`.
    - Diccionario completo de columnas en `docs/Data_Dictionary.md`.
 2. **Feature engineering**:
    - Rolling / lagged por equipo: media de los últimos 5 partidos de goles (a favor/en contra), tiros, tiros a puerta, corners, faltas, tarjetas, puntos, fuerza defensiva (clean sheets). Esto respeta el requisito de "solo información previa".
@@ -104,9 +104,6 @@ ML_Project/
 │   │   ├── README.md          # guía de reproducibilidad de los datos
 │   │   ├── fetch_data.py      # descarga de datos crudos
 │   │   └── process_data.py    # solo consolidación de crudos
-│   ├── eda/
-│   │   ├── eda.ipynb          # EDA de partidos -> exporta matches_clean.csv (figuras del informe)
-│   │   └── feature.ipynb      # feature engineering sobre matches_clean -> dataset_final.csv
 │   └── data/                  # generado por los scripts (gitignored)
 │       ├── matches.csv        # 30,182 partidos, 186 columnas (consolidado crudo)
 │       ├── matches_sq.csv     # base unificada: 222 cols (219 útiles), 36 de squad
@@ -114,6 +111,9 @@ ML_Project/
 │       ├── dataset_final.csv  # 40 features top-MI + target (lo genera feature.ipynb)
 │       ├── raw/               # 90 CSVs de football-data.co.uk
 │       └── players/           # snapshots Kaggle, normalized, squad_quality, club_map
+├── eda/
+│   ├── eda.ipynb              # EDA de partidos -> exporta matches_clean.csv (figuras del informe)
+│   └── feature.ipynb          # feature engineering sobre matches_clean -> dataset_final.csv
 └── notebooks/                 # (pendiente: modelado final, backtest)
 ```
 
@@ -129,9 +129,7 @@ python -m venv .venv
 .venv/bin/python scripts/download/fetch_data.py    # descarga data/raw y data/players/raw
 .venv/bin/python scripts/download/process_data.py  # consolida matches.csv, players_all.csv y matches_sq.csv
 
-# 2) Notebooks (desde scripts/eda/, en este orden):
+# 2) Notebooks (desde eda/, en este orden):
 #    1) eda.ipynb     -> limpia matches_sq.csv y exporta matches_clean.csv
 #    2) feature.ipynb -> feature engineering sobre matches_clean.csv y exporta dataset_final.csv
 ```
-
-> **Nota**: usar siempre `.venv/bin/python`. El mapeo fuzzy de clubes se hace en `feature.ipynb` y requiere `rapidfuzz`; sin él la cobertura cae de ~97.1% a ~96.0%.

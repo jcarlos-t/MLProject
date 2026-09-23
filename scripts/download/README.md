@@ -1,7 +1,7 @@
 # Reproducibilidad de los datos
 
 Este directorio contiene los scripts que **descargan y consolidan** los datos crudos.
-No hacen EDA ni modelado (eso vive en `../eda/`).
+No hacen EDA ni modelado (eso vive en `../../eda/`).
 
 ## Qué hace cada script
 
@@ -38,13 +38,13 @@ los mensajes del script; es seguro re-ejecutar.)
 
 ## Notas
 
-- **Flujo aguas arriba del modelado**: `../eda/eda.ipynb` limpia `matches_sq.csv` y exporta
-  `matches_clean.csv` (dataset limpio); `../eda/feature.ipynb` parte de ese archivo limpio y exporta
+- **Flujo aguas arriba del modelado**: `../../eda/eda.ipynb` limpia `matches_sq.csv` y exporta
+  `matches_clean.csv` (dataset limpio); `../../eda/feature.ipynb` parte de ese archivo limpio y exporta
   `dataset_final.csv` (40 features top-MI + target).
 - **Kaggle**: los 10 snapshots provienen de datasets públicos (no requieren credenciales para
   descargar vía `kagglehub`). Están definidos en `KAGGLE_DATASETS` dentro de `fetch_data.py`;
   algunos usan el filtro `fifa_version` para fijar el snapshot de esa temporada.
 - **Snapshots**: hay exactamente un snapshot por temporada para evitar mezclar versiones de
   ratings de EA/FC en el cruce de `process_data.py`.
-- El mapeo fuzzy de clubes (EA → football-data) se hace en `../eda/feature.ipynb` y requiere
+- El mapeo fuzzy de clubes (EA → football-data) se hace en `../../eda/feature.ipynb` y requiere
   `rapidfuzz`; sin él la cobertura cae de ~97.1% a ~96.0%.

@@ -4,7 +4,7 @@
 Este script SOLO cruza/consolida tablas para construir la base unificada.
 NO hace EDA ni analytics (no hay limpieza de calidad, ni z-scores relativos,
 ni mutual information, ni modelos, ni ploteos / decisiones de análisis).
-Eso queda en los notebooks de script/eda.
+Eso queda en los notebooks de eda/.
 
 Pasos:
     1. Consolida CSVs de partidos        -> data/matches.csv
