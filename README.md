@@ -55,10 +55,10 @@ detectar **apuestas con valor (value bets)**.
 ### Pipeline
 
 1. **Datos** (ver `docs/Data_Dictionary.md`; guía de reproducción en `scripts/download/README.md`):
-   - `scripts/download/fetch_data.py` descarga crudos -> `scripts/data/raw/` (117 CSVs de partidos, football-data.co.uk: 9 ligas × 13 temporadas; 2013/14 es solo calentamiento del historial y 2014/15–2025/26 son las temporadas modeladas) y `scripts/data/players/raw/` (12 snapshots de ratings de jugadores, Kaggle: FIFA 15 → FC 26).
+   - `scripts/download/fetch_data.py` descarga crudos -> `scripts/data/raw/` (117 CSVs de partidos, football-data.co.uk: 9 ligas × 13 temporadas; 2013/14 es solo calentamiento del historial y 2014/15–2025/26 son las temporadas modeladas) y `scripts/data/players/raw/` (12 snapshots de ratings de jugadores, Kaggle: FIFA 15 → FC 26); el snapshot FC25 viene de sofifa, capturado en julio de 2025: final de la temporada 2024/25 y sin fichajes de verano).
    - `scripts/download/process_data.py` **solo consolida** -> `matches.csv` (36,150 partidos, 9 ligas, 12 temporadas), `players/raw/players_all.csv` y `matches_sq.csv` (base unificada).
-   - `scripts/eda/eda.ipynb` (EDA): limpia la base unificada (columnas de cuotas con >40% de nulos eliminadas, imputación KNN de cuotas y de estadísticas de partido, squad imputado con la media liga-temporada; `Time` descartada por ser estructural desde 2019/20) y exporta `matches_clean.csv` (sin nulos).
-   - `scripts/eda/feature.ipynb` (feature engineering): parte del dataset limpio, construye features de historial (rolling últimos 5), mercado (consenso de probabilidades implícitas B365/BW/PS/WH, `MKT_*`), squad (`DIF_sq_top11`) y un ranking con `mutual_info_classif` (`mi_ranking.csv`), y exporta `dataset_final.csv` (33 features + target + metadatos), `feature_sets.json` (F1 = 13 features sin NaN para LR/SVM/MLP; F2 = las 33, con NaN en tiros/córners/faltas/tarjetas donde la fuente no los publica) y `backtest_odds.csv` (cuotas B365 de apertura y Pinnacle de cierre, observadas).
+   - `scripts/notebooks/eda.ipynb` (EDA): limpia la base unificada (columnas de cuotas con >40% de nulos eliminadas, imputación KNN de cuotas y de estadísticas de partido, squad imputado con la media liga-temporada; `Time` descartada por ser estructural desde 2019/20) y exporta `matches_clean.csv` (sin nulos).
+   - `scripts/notebooks/feature.ipynb` (feature engineering): parte del dataset limpio, construye features de historial (rolling últimos 5), mercado (consenso de probabilidades implícitas B365/BW/PS/WH, `MKT_*`), squad (`DIF_sq_top11`) y un ranking con `mutual_info_classif` (`mi_ranking.csv`), y exporta `dataset_final.csv` (33 features + target + metadatos), `feature_sets.json` (F1 = 13 features sin NaN para LR/SVM/MLP; F2 = las 33, con NaN en tiros/córners/faltas/tarjetas donde la fuente no los publica) y `backtest_odds.csv` (cuotas B365 de apertura y Pinnacle de cierre, observadas).
    - Diccionario completo de columnas en `docs/Data_Dictionary.md`.
 2. **Feature engineering**:
    - Rolling / lagged por equipo: media de los últimos 5 partidos de goles (a favor/en contra), tiros, tiros a puerta, corners, faltas, tarjetas, puntos, fuerza defensiva (clean sheets). Esto respeta el requisito de "solo información previa".
@@ -105,9 +105,11 @@ ML_Project/
 │   │   ├── README.md          # guía de reproducibilidad de los datos
 │   │   ├── fetch_data.py      # descarga de datos crudos
 │   │   └── process_data.py    # solo consolidación de crudos
-│   ├── eda/
+│   ├── notebooks/
 │   │   ├── eda.ipynb          # EDA de partidos -> exporta matches_clean.csv (figuras del informe)
-│   │   └── feature.ipynb      # feature engineering sobre matches_clean -> dataset_final.csv
+│   │   ├── feature.ipynb      # feature engineering sobre matches_clean -> dataset_final.csv
+│   │   ├── modelo.ipynb       # comparación de bloques/modelos con CV temporal (mercado, plantilla, forma, habilidades; clasificación y regresión)
+│   │   └── mercado.ipynb      # ¿quién gana? cuotas vs sin cuotas, desacuerdo, calibración del mercado, hiperparámetros
 │   └── data/                  # generado por los scripts (gitignored)
 │       ├── matches.csv        # 36,150 partidos (consolidado crudo)
 │       ├── matches_sq.csv     # base unificada: 225 cols, 36 de squad
@@ -115,11 +117,14 @@ ML_Project/
 │       ├── dataset_final.csv  # 33 features + target + metadatos (lo genera feature.ipynb)
 │       ├── backtest_odds.csv  # cuotas B365 (apertura) y Pinnacle (cierre) alineadas fila a fila
 │       ├── mi_ranking.csv     # ranking de mutual information (train)
-│       ├── feature_sets.json  # F1 (sin NaN) y F2 (completo)
+│       ├── feature_sets.json  # F1 (sin NaN), F2 (completo), SK_habilidades y targets
+│       ├── dataset_skills.csv # 33 habilidades del once titular (local - visitante) + FTHG, FTAG, GD
+│       ├── hiperparametros.json  # hiperparámetros elegidos (mercado.ipynb, Paso 1)
+│       ├── backtest_resultados.csv / backtest_precio_blando.csv / mercado_pruebas.csv  # salidas de mercado.ipynb
+│       ├── predicciones_oof.csv  # predicciones fuera de muestra de los 8 folds (mercado.ipynb, Paso 2)
 │       ├── matches_warmup.csv # 2013/14: solo historial de forma, no se modela
 │       ├── raw/               # 117 CSVs de football-data.co.uk
 │       └── players/           # snapshots Kaggle, normalized, squad_quality, club_map
-└── notebooks/                 # (pendiente: modelado final, backtest)
 ```
 
 ---
@@ -134,7 +139,7 @@ python -m venv .venv
 .venv/bin/python scripts/download/fetch_data.py    # descarga data/raw y data/players/raw
 .venv/bin/python scripts/download/process_data.py  # consolida matches.csv, players_all.csv y matches_sq.csv
 
-# 2) Notebooks (desde scripts/eda/, en este orden):
+# 2) Notebooks (desde scripts/notebooks/, en este orden):
 #    1) eda.ipynb     -> limpia matches_sq.csv y exporta matches_clean.csv
 #    2) feature.ipynb -> feature engineering sobre matches_clean.csv y exporta dataset_final.csv
 ```

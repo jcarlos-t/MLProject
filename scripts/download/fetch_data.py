@@ -44,7 +44,10 @@ KAGGLE_DATASETS = [
     ("luisfucros/fifa-players", "players_22.csv", "2022.csv", None),
     ("stefanoleone992/ea-sports-fc-24-complete-player-dataset", "male_players.csv", "2023.csv", 23),
     ("stefanoleone992/ea-sports-fc-24-complete-player-dataset", "male_players.csv", "2024.csv", 24),
-    ("akshyakumarkc/fifa-25-player-ratings", "players_info.csv", "2025.csv", None),
+    # FC25 (temporada 2024/25): sofifa con 34 habilidades y club_position; capturado 2025-07-17 pero sin fichajes
+    # de verano (max club_joined = 2025-05-25). Se descarto aniss7/fifa-player-data-from-sofifa-2025-06-03: sus
+    # columnas de habilidades vienen vacias.
+    ("sametozturkk/ea-sports-fc-25-real-player-data-sofifa-merge", "new-players-data-full.csv", "2025.csv", None),
     ("rovnez/fc-26-fifa-26-player-data", "FC26_20250921.csv", "2026.csv", None),
 ]
 

@@ -38,7 +38,7 @@ Generado por `scripts/download/process_data.py`: **join** de `matches.csv` con l
 - Las columnas vienen tipadas (int/float/str). Algunas columnas de partido se registran como
   `float` pero son conteos enteros (p. ej. `HS`); las cuotas son `float` continuas.
 - Las features derivadas de plantilla (ventaja neta `DIF_sq_top11`) **no vienen aquí**: se
-  construyen en el feature engineering (`scripts/eda/feature.ipynb`).
+  construyen en el feature engineering (`scripts/notebooks/feature.ipynb`).
 
 ### 1.1 Identificación del partido
 

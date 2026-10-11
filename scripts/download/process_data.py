@@ -4,7 +4,7 @@
 Este script SOLO cruza/consolida tablas para construir la base unificada.
 NO hace EDA ni analytics (no hay limpieza de calidad, ni z-scores relativos,
 ni mutual information, ni modelos, ni ploteos / decisiones de análisis).
-Eso queda en los notebooks de scripts/eda.
+Eso queda en los notebooks de scripts/notebooks.
 
 Pasos:
     1. Consolida CSVs de partidos        -> data/matches.csv
@@ -47,7 +47,7 @@ PLAYER_SPECS = {
     2022: ("2022.csv", dict(club="club_name", league="league_name", overall="overall", pos="player_positions")),
     2023: ("2023.csv", dict(club="club_name", league="league_name", overall="overall", pos="player_positions")),
     2024: ("2024.csv", dict(club="club_name", league="league_name", overall="overall", pos="player_positions")),
-    2025: ("2025.csv", dict(club="club", league="league", overall="ovr", pos="position")),
+    2025: ("2025.csv", dict(club="club_name", league="club_league_name", overall="overall_rating", pos="positions")),
     2026: ("2026.csv", dict(club="club_name", league="league_name", overall="overall", pos="player_positions")),
 }
 
@@ -414,13 +414,13 @@ def map_clubs():
             # football-data renombra al equipo: Mouscron-Peruwelz (14/15-15/16) -> Mouscron (desde 16/17)
             if ref == "B1:Mouscron-Peruwelz" and season >= 2017:
                 ref = "B1:Mouscron"
-            rows.append((season, club, ref, 100)); continue
+            rows.append((season, club, ref, 100, 0, div)); continue
         if key in global_exact:
-            rows.append((season, club, global_exact[key], 100)); continue
+            rows.append((season, club, global_exact[key], 100, 1, div)); continue
         if pd.isna(div):
             hit = token_subset_match(key, canon_ref, allow_prefix=False)
             if hit:
-                rows.append((season, club, hit[1], 100))
+                rows.append((season, club, hit[1], 100, 2, div))
             else:
                 review.append((season, club, "", "", 0))
             continue
@@ -442,10 +442,21 @@ def map_clubs():
                     ref = f"{div}:{pool[idx][1]}"
         if ref is None:
             review.append((season, club, div, "", 0)); continue
-        rows.append((season, club, ref, score))
+        rows.append((season, club, ref, score, 2 if score == 100 else 3, div))
 
-    cm = pd.DataFrame(rows, columns=["season", "club", "div_team", "score"])
+    cm = pd.DataFrame(rows, columns=["season", "club", "div_team", "score", "prio", "club_div"])
     cm[["div", "team"]] = cm["div_team"].str.split(":", expand=True)
+    # Si varios clubes EA caen en el mismo equipo (p. ej. "Arsenal" y "Arsenal de Sarandi", "Inter" e
+    # "Inter Miami", filiales "II"/"B"), gana el de mejor tipo de match (override > exacto > subconjunto de
+    # tokens > fuzzy), luego el que juega en la misma liga, luego mayor score y por ultimo el nombre mas corto.
+    n_antes = len(cm)
+    cm["same_div"] = (cm["club_div"] == cm["div"]).astype(int)
+    cm["_len"] = cm["club"].str.len()
+    cm = (cm.sort_values(["season", "div_team", "prio", "same_div", "score", "_len"],
+                         ascending=[True, True, True, False, False, True])
+            .drop_duplicates(["season", "div_team"], keep="first"))
+    print(f"  conflictos resueltos (mismo equipo, varios clubes EA): {n_antes - len(cm)}")
+    cm = cm.drop(columns=["prio", "club_div", "same_div", "_len"])
     cm.to_csv(PLAYERS / "club_map.csv", index=False)
     low = cm[cm["score"] < 100]
     print(f"  club_map.csv: {len(cm):,} mapeos | exact/override: {len(cm) - len(low):,} | fuzzy: {len(low):,} | unmatched: {len(review):,}")
