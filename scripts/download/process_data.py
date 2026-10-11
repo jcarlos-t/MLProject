@@ -4,7 +4,7 @@
 Este script SOLO cruza/consolida tablas para construir la base unificada.
 NO hace EDA ni analytics (no hay limpieza de calidad, ni z-scores relativos,
 ni mutual information, ni modelos, ni ploteos / decisiones de análisis).
-Eso queda en los notebooks de script/eda.
+Eso queda en los notebooks de scripts/eda.
 
 Pasos:
     1. Consolida CSVs de partidos        -> data/matches.csv
@@ -31,11 +31,14 @@ PLAYERS = DATA / "players"
 PLAYERS_RAW = PLAYERS / "raw"
 NORM_DIR = PLAYERS / "normalized"
 
-SEASONS = ["1617", "1718", "1819", "1920", "2021", "2122", "2223", "2324", "2425", "2526"]
+WARMUP_SEASONS = ["1314"]   # solo historial de forma; sin ratings de jugadores ni modelado
+SEASONS = ["1415", "1516", "1617", "1718", "1819", "1920", "2021", "2122", "2223", "2324", "2425", "2526"]
 LEAGUES = ["E0", "D1", "SP1", "I1", "F1", "N1", "P1", "T1", "B1"]
 
 # Snapshot (año) -> (fichero, columnas del esquema heterogéneo)
 PLAYER_SPECS = {
+    2015: ("2015.csv", dict(club="club_name", league="league_name", overall="overall", pos="player_positions")),
+    2016: ("2016.csv", dict(club="club_name", league="league_name", overall="overall", pos="player_positions")),
     2017: ("2017.csv", dict(club="club_name", league="league_name", overall="overall", pos="player_positions")),
     2018: ("2018.csv", dict(club="club_name", league="league_name", overall="overall", pos="player_positions")),
     2019: ("2019.csv", dict(club="club_name", league="league_name", overall="overall", pos="player_positions")),
@@ -53,7 +56,7 @@ SQUAD_FEAT = (["n_players", "overall_mean", "overall_max", "top11_mean", "top15_
               + [g for grp in LINE_GROUPS
                  for g in (f"{grp}_mean", f"{grp}_top_mean", f"{grp}_top3_mean")])
 
-SEASON_SMAP = {j: f"{j - 2001:02d}{j - 2000:02d}" for j in range(2017, 2027)}
+SEASON_SMAP = {j: f"{j - 2001:02d}{j - 2000:02d}" for j in range(2015, 2027)}
 
 
 # ---------------------------------------------------------------------------
@@ -73,6 +76,11 @@ def consolidate_matches():
             except Exception as e:
                 print(f"  skip {f.name}: {e}")
                 continue
+            n0 = len(df)
+            df = df.dropna(subset=["HomeTeam", "AwayTeam", "FTR"])
+            df = df[df["FTR"].isin(["H", "D", "A"])]
+            if n0 - len(df):
+                print(f"  {f.name}: {n0 - len(df)} filas vacias/sin resultado descartadas")
             if df.empty:
                 continue
             df["Season"] = season
@@ -86,6 +94,31 @@ def consolidate_matches():
     out = pd.concat(rows, ignore_index=True)
     out.to_csv(DATA / "matches.csv", index=False)
     print(f"  matches.csv: {len(out):,} rows")
+    return True
+
+
+def consolidate_warmup():
+    """Temporada(s) de calentamiento -> data/matches_warmup.csv (solo para construir historial rolling)."""
+    print("=== Step 1b: Consolidating warm-up season(s) ===")
+    rows = []
+    for season in WARMUP_SEASONS:
+        for league in LEAGUES:
+            f = RAW / f"{league}_{season}.csv"
+            if not f.exists():
+                print(f"  skip {f.name} (not found)")
+                continue
+            df = pd.read_csv(f, dtype=str)
+            df = df.dropna(subset=["HomeTeam", "AwayTeam", "FTR"])
+            df = df[df["FTR"].isin(["H", "D", "A"])]
+            df["Season"] = season
+            df["Div"] = league
+            rows.append(df)
+    if not rows:
+        print("  WARNING: no warm-up CSVs found (el historial de 2014/15 quedara sin calentamiento)")
+        return True
+    out = pd.concat(rows, ignore_index=True)
+    out.to_csv(DATA / "matches_warmup.csv", index=False)
+    print(f"  matches_warmup.csv: {len(out):,} rows")
     return True
 
 
@@ -306,6 +339,24 @@ def map_clubs():
         "istanbul basaksehir": "T1:Buyuksehyr", "alanyaspor": "T1:Alanyaspor",
         "antalyaspor": "T1:Antalyaspor", "konyaspor": "T1:Konyaspor",
         "sivasspor": "T1:Sivasspor", "kayserispor": "T1:Kayserispor",
+        # Alias de snapshots EA que no coinciden con el nombre de football-data
+        "man utd": "E0:Man United", "spurs": "E0:Tottenham",
+        "queens park rangers": "E0:QPR", "qpr": "E0:QPR",
+        "rcd espanyol": "SP1:Espanol", "rcd espanyol de barcelona": "SP1:Espanol",
+        "espanyol de barcelona": "SP1:Espanol",
+        "milano fc": "I1:Milan", "latium": "I1:Lazio", "bergamo calcio": "I1:Atalanta",
+        "lombardia fc": "I1:Inter",
+        "ol": "F1:Lyon", "om": "F1:Marseille", "havre ac": "F1:Le Havre", "le havre ac": "F1:Le Havre",
+        "stade rennais fc": "F1:Rennes", "gfc ajaccio": "F1:Ajaccio GFCO",
+        "istanbul basaksehir": "T1:Buyuksehyr", "istanbul basaksehir fk": "T1:Buyuksehyr",
+        "medipol basaksehir fk": "T1:Buyuksehyr", "basaksehir": "T1:Buyuksehyr",
+        "bodrum fk": "T1:Bodrumspor",
+        "vitoria sc": "P1:Guimaraes", "vitoria de guimaraes": "P1:Guimaraes", "vitoria guimaraes": "P1:Guimaraes",
+        "r union st g": "B1:St. Gilloise", "union saint gilloise": "B1:St. Gilloise",
+        "royale union saint gilloise": "B1:St. Gilloise",
+        "stvv": "B1:St Truiden", "sint truiden": "B1:St Truiden", "sint truidense vv": "B1:St Truiden",
+        "rwdm": "B1:RWD Molenbeek", "royal excel mouscron": "B1:Mouscron-Peruwelz",
+        "nec nijmegen": "N1:Nijmegen", "n e c nijmegen": "N1:Nijmegen", "nec": "N1:Nijmegen",
         "anderlecht": "B1:Anderlecht", "club brugge": "B1:Club Brugge",
         "krc genk": "B1:Genk", "genk": "B1:Genk", "gent": "B1:Gent",
         "standard liege": "B1:Standard", "charleroi": "B1:Charleroi",
@@ -321,7 +372,8 @@ def map_clubs():
         "english premier league": "E0", "premier league": "E0",
         "german 1. bundesliga": "D1", "bundesliga": "D1",
         "spain primera division": "SP1", "la liga": "SP1", "laliga ea sports": "SP1",
-        "italian serie a": "I1", "french ligue 1": "F1", "ligue 1": "F1",
+        "italian serie a": "I1", "french ligue 1": "F1", "ligue 1": "F1", "ligue 1 mcdonalds": "F1",
+        "serie a enilive": "I1",
         "holland eredivisie": "N1", "eredivisie": "N1",
         "portuguese liga zon sagres": "P1", "liga portugal": "P1", "primeira liga": "P1",
         "turkish super lig": "T1", "super lig": "T1", "trendyol super lig": "T1",
@@ -358,7 +410,11 @@ def map_clubs():
         if key in NON_TARGET:
             continue
         if key in OVERRIDES_NORM:
-            rows.append((season, club, OVERRIDES_NORM[key], 100)); continue
+            ref = OVERRIDES_NORM[key]
+            # football-data renombra al equipo: Mouscron-Peruwelz (14/15-15/16) -> Mouscron (desde 16/17)
+            if ref == "B1:Mouscron-Peruwelz" and season >= 2017:
+                ref = "B1:Mouscron"
+            rows.append((season, club, ref, 100)); continue
         if key in global_exact:
             rows.append((season, club, global_exact[key], 100)); continue
         if pd.isna(div):
@@ -456,6 +512,7 @@ def join_matches_squad():
 if __name__ == "__main__":
     done = [
         consolidate_matches(),
+        consolidate_warmup(),
         consolidate_players(),
         normalize_players(),
         squad_quality(),

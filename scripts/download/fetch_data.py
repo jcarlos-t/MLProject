@@ -2,11 +2,11 @@
 """Download match data from football-data.co.uk and player ratings from Kaggle.
 
 Usage:
-    python scripts/fetch_data.py
+    python scripts/download/fetch_data.py
 
 Outputs:
-    data/raw/<DIV>_<SEASON>.csv   (90 match CSVs from football-data.co.uk)
-    data/players/raw/<file>.csv   (10 player rating snapshots from Kaggle)
+    data/raw/<DIV>_<SEASON>.csv   (117 match CSVs: 9 ligas x 13 temporadas, incl. 2013/14 de calentamiento from football-data.co.uk)
+    data/players/raw/<file>.csv   (12 player rating snapshots from Kaggle)
 
 Requirements:
     pip install kagglehub pandas
@@ -26,12 +26,16 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RAW_DIR = os.path.join(BASE_DIR, "data", "raw")
 PLAYERS_RAW = os.path.join(BASE_DIR, "data", "players", "raw")
 
-SEASONS = ["1617", "1718", "1819", "1920", "2021", "2122", "2223", "2324", "2425", "2526"]
+# Temporada de calentamiento: solo para construir historial de forma (no se modela ni tiene ratings)
+WARMUP_SEASONS = ["1314"]
+SEASONS = ["1415", "1516", "1617", "1718", "1819", "1920", "2021", "2122", "2223", "2324", "2425", "2526"]
 LEAGUES = ["E0", "D1", "SP1", "I1", "F1", "N1", "P1", "T1", "B1"]
 
 # (dataset, source_file, local_name, fifa_version_filter)
 # fifa_version_filter: entero para filtrar la columna `fifa_version` del CSV, o None
 KAGGLE_DATASETS = [
+    ("luisfucros/fifa-players", "players_15.csv", "2015.csv", None),
+    ("luisfucros/fifa-players", "players_16.csv", "2016.csv", None),
     ("luisfucros/fifa-players", "players_17.csv", "2017.csv", None),
     ("luisfucros/fifa-players", "players_18.csv", "2018.csv", None),
     ("luisfucros/fifa-players", "players_19.csv", "2019.csv", None),
@@ -50,9 +54,9 @@ HEADERS = {"User-Agent": "Mozilla/5.0"}
 def download_match_data():
     os.makedirs(RAW_DIR, exist_ok=True)
     ctx = ssl.create_default_context()
-    total = len(SEASONS) * len(LEAGUES)
+    total = len(WARMUP_SEASONS + SEASONS) * len(LEAGUES)
     count = 0
-    for season in SEASONS:
+    for season in WARMUP_SEASONS + SEASONS:
         for league in LEAGUES:
             count += 1
             url = f"https://football-data.co.uk/mmz4281/{season}/{league}.csv"

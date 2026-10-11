@@ -3,6 +3,8 @@
 Predicción probabilística del resultado de partidos de fútbol (local / empate / visitante).
 Fuente: **football-data.co.uk** (partidos y cuotas) + **Kaggle** (ratings de jugadores FIFA/FC).
 
+> **Nota de versión:** la base se amplió a **2014/15–2025/26 (36,150 partidos, 225 columnas)**. Los conteos de `Únicos`/`Nulos` por columna de las tablas de abajo se calcularon sobre la versión anterior (2016/17–2025/26, 30,182 partidos) y están **pendientes de regenerar**; la estructura de columnas no cambió, salvo `SJH/SJD/SJA` (Stan James, solo temporadas antiguas).
+
 ---
 
 ## 0. Conceptos clave del sistema
@@ -10,14 +12,14 @@ Fuente: **football-data.co.uk** (partidos y cuotas) + **Kaggle** (ratings de jug
 | Término | Qué es | Ejemplo en datos |
 |---------|--------|------------------|
 | **Liga (`Div`)** | Campeonato nacional. Los códigos son de football-data: cada uno identifica una liga europea. | `E0` = Premier League, `D1` = Bundesliga, `SP1` = La Liga, `I1` = Serie A, `F1` = Ligue 1, `N1` = Eredivisie, `P1` = Primeira Liga, `T1` = Süper Lig, `B1` = Pro League |
-| **Temporada (`Season`)** | Ciclo anual de un campeonato, codificado con el año de inicio y el de fin. | `1617` = temporada 2016/17 … `2526` = 2025/26 |
+| **Temporada (`Season`)** | Ciclo anual de un campeonato, codificado con el año de inicio y el de fin. | `1415` = temporada 2014/15 … `2526` = 2025/26 |
 | **Resultado 1X2 (`FTR`)** | **Target** del modelo: el partido se salda con victoria del local, empate o victoria del visitante. | `H`, `D`, `A` |
 | **Equipo local / visitante** | `HomeTeam` juega en su estadio; `AwayTeam` de localía. El local tiene ventaja estadística (~44% de victorias). | `HomeTeam=Man United`, `AwayTeam=Man City` |
 | **Cuota decimal** | Multiplicador que paga la casa si aciertas; >1 y menor = más probable. | Bet365 `B365H = 1.16` → local muy favorito |
 | **Código de casa** | Prefijo que identifica la casa/referencia en el nombre de la columna (`B365`=Bet365, `PS`=Pinnacle, `Max`=máx. de mercado…). Ver §1.4.1. | `PSCH` → Pinnacle (PS), cierre (C), local (H) |
 | **Cuota de apertura vs cierre** | Apertura = inicios de la semana; **cierre** = publicada al cerrar el mercado (considerada la mejor estimación de la 'probabilidad real'). | `B365H` (apertura) vs `B365CH` (cierre) |
 | **Overround** | Margen de la casa: `1/H + 1/D + 1/A` siempre >1. Para comparar con el modelo hay que **normalizar** las cuotas (dividir por su suma). | `1/2.4 + 1/3.3 + 1/3.25 ≈ 1.05` |
-| **Snapshot de jugadores** | Captura anual de ratings **EA Sports (FIFA/FC)** usada como 'valoración real' de cada jugador esa temporada. | Snapshots `2017.csv` … `2026.csv` |
+| **Snapshot de jugadores** | Captura anual de ratings **EA Sports (FIFA/FC)** usada como 'valoración real' de cada jugador esa temporada. | Snapshots `2015.csv` … `2026.csv` |
 | **Squad quality** | **Calidad de plantilla** agregada por (temporada, club) a partir de los ratings de los jugadores (medias, máximo y top-3 por línea). Es pre-temporada → usable directa. | `overall_mean`, `top11_mean`, `gk_top3_mean` |
 | **Mapeo de clubes** | Traducción del nombre del club EA → nombre canónico de football-data. | `Man United` (football-data) = `Manchester United` (EA) |
 | **Team-slot / `_sq_mapped`** | Cada partido tiene 2 'huecos' de equipo (local y visitante). `_sq_mapped=1` si ese hueco se mapeó a un club con squad; `0` si quedó `NA` (ascendidos, filtros de temporada…). | `HomeTeam_sq_mapped = 1` |
@@ -31,8 +33,8 @@ Generado por `scripts/download/process_data.py`: **join** de `matches.csv` con l
 **squad quality** de local y visitante vía `Season|Div|Team` → `club_map.csv`
 (un snapshot por temporada, sin mezclar versiones ni lookahead).
 
-- **Una fila = 1 partido**. Cobertura: **9 ligas × 10 temporadas (2016/17–2025/26)**, y = **30,182 partidos**.
-- **30,182 filas × 222 columnas** = 186 del partido + 36 de plantilla (17×2 lados + 2 flags).
+- **Una fila = 1 partido**. Cobertura: **9 ligas × 12 temporadas (2014/15–2025/26)**, y = **36,150 partidos**.
+- **36,150 filas × 225 columnas** = 189 del partido + 36 de plantilla (17×2 lados + 2 flags).
 - Las columnas vienen tipadas (int/float/str). Algunas columnas de partido se registran como
   `float` pero son conteos enteros (p. ej. `HS`); las cuotas son `float` continuas.
 - Las features derivadas de plantilla (ventaja neta `DIF_sq_top11`) **no vienen aquí**: se
@@ -45,7 +47,7 @@ Generado por `scripts/download/process_data.py`: **join** de `matches.csv` con l
 | Campo | Tipo | Ejemplo real | Únicos | Nulos | Descripción |
 |---|---|---|---|---|---|
 | `Div` | str | `E0` | 9 | 0 | **Liga** (código football-data). 9 ligas europeas. |
-| `Season` | int | `1617` | 10 | 0 | **Temporada** como código de 4 dígitos: `1617` = 2016/17 … `2526` = 2025/26. |
+| `Season` | int | `1617` | 12 | 0 | **Temporada** como código de 4 dígitos: `1415` = 2014/15 … `2526` = 2025/26. |
 | `Date` | str | `13/08/16` | 2152 | 0 | Fecha del partido (dd/mm/aa). |
 | `Time` | str | `20:00` | 47 | 8952 | Hora de inicio (solo temporadas recientes). |
 | `HomeTeam` | str | `Burnley` | 280 | 0 | Equipo **local** (nombre en inglés). 280 equipos distintos. |

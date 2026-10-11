@@ -55,16 +55,17 @@ detectar **apuestas con valor (value bets)**.
 ### Pipeline
 
 1. **Datos** (ver `docs/Data_Dictionary.md`; guía de reproducción en `scripts/download/README.md`):
-   - `scripts/download/fetch_data.py` descarga crudos -> `scripts/data/raw/` (90 CSVs de partidos, football-data.co.uk) y `scripts/data/players/raw/` (10 snapshots de ratings de jugadores, Kaggle).
-   - `scripts/download/process_data.py` **solo consolida** -> `matches.csv` (30,182 partidos, 9 ligas, 10 temporadas), `players/raw/players_all.csv` y `matches_sq.csv` (base unificada).
-   - `scripts/eda/eda.ipynb` (EDA): limpia la base unificada (nulos, banderas `*_Ausente`, imputación KNN, `Time_hora`) y exporta `matches_clean.csv` (dataset limpio, sin nulos).
-   - `scripts/eda/feature.ipynb` (feature engineering): parte del dataset limpio, construye features de historial (rolling últimos 5), squad (`DIF_sq_top11`) y selección con `mutual_info_classif` (top 40), y exporta `dataset_final.csv`.
+   - `scripts/download/fetch_data.py` descarga crudos -> `scripts/data/raw/` (117 CSVs de partidos, football-data.co.uk: 9 ligas × 13 temporadas; 2013/14 es solo calentamiento del historial y 2014/15–2025/26 son las temporadas modeladas) y `scripts/data/players/raw/` (12 snapshots de ratings de jugadores, Kaggle: FIFA 15 → FC 26).
+   - `scripts/download/process_data.py` **solo consolida** -> `matches.csv` (36,150 partidos, 9 ligas, 12 temporadas), `players/raw/players_all.csv` y `matches_sq.csv` (base unificada).
+   - `scripts/eda/eda.ipynb` (EDA): limpia la base unificada (columnas de cuotas con >40% de nulos eliminadas, imputación KNN de cuotas y de estadísticas de partido, squad imputado con la media liga-temporada; `Time` descartada por ser estructural desde 2019/20) y exporta `matches_clean.csv` (sin nulos).
+   - `scripts/eda/feature.ipynb` (feature engineering): parte del dataset limpio, construye features de historial (rolling últimos 5), mercado (consenso de probabilidades implícitas B365/BW/PS/WH, `MKT_*`), squad (`DIF_sq_top11`) y un ranking con `mutual_info_classif` (`mi_ranking.csv`), y exporta `dataset_final.csv` (33 features + target + metadatos), `feature_sets.json` (F1 = 13 features sin NaN para LR/SVM/MLP; F2 = las 33, con NaN en tiros/córners/faltas/tarjetas donde la fuente no los publica) y `backtest_odds.csv` (cuotas B365 de apertura y Pinnacle de cierre, observadas).
    - Diccionario completo de columnas en `docs/Data_Dictionary.md`.
 2. **Feature engineering**:
    - Rolling / lagged por equipo: media de los últimos 5 partidos de goles (a favor/en contra), tiros, tiros a puerta, corners, faltas, tarjetas, puntos, fuerza defensiva (clean sheets). Esto respeta el requisito de "solo información previa".
    - Squad quality directa (pre-temporada): se conserva `*_sq_top11_mean` (media del once titular) por lado + banderas `*_sq_mapped`, y se crea la ventaja neta `DIF_sq_top11 = local − visitante` (decisión en `feature.ipynb`).
+   - Mercado: `MKT_pH/pD/pA` = promedio entre casas de las probabilidades implícitas normalizadas de las cuotas de **apertura**, y `MKT_margin` (overround medio). Reemplaza a `AvgH/D/A`, que solo existen desde 2019/20.
    - Home advantage: features separadas para local y visitante.
-3. **Selección de features**: `mutual_info_classif` sobre el total de features; comparar con entrenar sin selección.
+3. **Selección de features**: `mutual_info_classif` (solo en train) como ranking; `dataset_final.csv` conserva todas las features y el top-k se decide en la validación temporal del modelado.
 4. **Modelos**:
    - Baseline: predecir la clase mayoritaria (o las cuotas del mercado).
    - **Logistic Regression** (lineal, interpretable), **Random Forest**, **XGBoost**, y opcionalmente **MLP/DNN** para replicar el hallazgo de Tammouch sobre redes.
@@ -85,7 +86,7 @@ detectar **apuestas con valor (value bets)**.
 - **Equipos ascendidos / sin historial** (problema de Tammouch): imputación con el rendimiento medio de equipos de mitad de tabla de la temporada previa; los slots sin squad quality quedan marcados con `_sq_mapped=0` y se imputan.
 - **Curse of dimensionality** (RF falló en el paper): pocas features bien elegidas (MI), CV, regularización y pipelines simples primero.
 - **Desbalanceo leve de clases** (H=44%, D=25%, A=31%): no se rebalancea (el objetivo es probabilidad calibrada), se usa el desbalance como prior.
-- **Temporada actual (2526) incompleta**: `matches.csv` incluye todos los partidos hasta hoy; para el backtest se puede optar por quedarnos hasta 2425.
+- **Temporada actual (2526) incompleta**: `fetch_data.py` no vuelve a descargar archivos existentes; para refrescarla, borrar `raw/*_2526.csv` y re-ejecutar. En 2025/26 Pinnacle (`PSH*`) tiene solo ~48% de cobertura.
 
 ---
 
@@ -108,11 +109,15 @@ ML_Project/
 │   │   ├── eda.ipynb          # EDA de partidos -> exporta matches_clean.csv (figuras del informe)
 │   │   └── feature.ipynb      # feature engineering sobre matches_clean -> dataset_final.csv
 │   └── data/                  # generado por los scripts (gitignored)
-│       ├── matches.csv        # 30,182 partidos, 186 columnas (consolidado crudo)
-│       ├── matches_sq.csv     # base unificada: 222 cols (219 útiles), 36 de squad
+│       ├── matches.csv        # 36,150 partidos (consolidado crudo)
+│       ├── matches_sq.csv     # base unificada: 225 cols, 36 de squad
 │       ├── matches_clean.csv  # dataset limpio, sin nulos (lo genera eda.ipynb)
-│       ├── dataset_final.csv  # 40 features top-MI + target (lo genera feature.ipynb)
-│       ├── raw/               # 90 CSVs de football-data.co.uk
+│       ├── dataset_final.csv  # 33 features + target + metadatos (lo genera feature.ipynb)
+│       ├── backtest_odds.csv  # cuotas B365 (apertura) y Pinnacle (cierre) alineadas fila a fila
+│       ├── mi_ranking.csv     # ranking de mutual information (train)
+│       ├── feature_sets.json  # F1 (sin NaN) y F2 (completo)
+│       ├── matches_warmup.csv # 2013/14: solo historial de forma, no se modela
+│       ├── raw/               # 117 CSVs de football-data.co.uk
 │       └── players/           # snapshots Kaggle, normalized, squad_quality, club_map
 └── notebooks/                 # (pendiente: modelado final, backtest)
 ```
@@ -134,4 +139,4 @@ python -m venv .venv
 #    2) feature.ipynb -> feature engineering sobre matches_clean.csv y exporta dataset_final.csv
 ```
 
-> **Nota**: usar siempre `.venv/bin/python`. El mapeo fuzzy de clubes se hace en `feature.ipynb` y requiere `rapidfuzz`; sin él la cobertura cae de ~97.1% a ~96.0%.
+> **Nota**: usar siempre `.venv/bin/python`. El mapeo de clubes (EA → football-data) se hace en `scripts/download/process_data.py` (paso 5: overrides + `rapidfuzz` como respaldo). Cobertura actual de squad quality: 100% de los slots equipo-partido.
