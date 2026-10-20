@@ -473,6 +473,25 @@ Modelo final (Pinnacle) & ROI $-1.4\%$ ($[-6.3\%,+3.0\%]$) \\
 \label{tab:mercado}
 \end{table}
 
+\subsection{Variables más relevantes, con y sin cuotas}
+Se usan dos medidas distintas. La \textbf{información mutua} (MI) mide cuánto se sabe del resultado conociendo una sola variable (Fig.~\ref{fig:imp_mi}); no depende de ningún modelo y no distingue variables redundantes. La \textbf{importancia por permutación de grupos} mide cuánto sube el \textit{log loss} de un HGB al barajar, en cada temporada de evaluación, todas las variables de un grupo a la vez (Fig.~\ref{fig:imp_perm}); se barajan grupos y no variables sueltas porque la calidad del once y sus habilidades están muy correlacionadas.
+
+Con cuotas, el precio domina: barajarlo sube el \textit{log loss} en 0.156 y ningún otro grupo pasa de 0.0013. Sin cuotas, el aporte se ordena así: plantilla (+0.023), Elo (+0.016), tiros a puerta (+0.009), goles y puntos recientes (+0.004) y habilidades individuales (+0.003); córners, faltas, tarjetas y contexto aportan prácticamente nada. La MI da el mismo orden en la parte alta (plantilla, tiros y Elo), pero asigna una MI alta a las habilidades aunque casi no aporten, porque son redundantes con la plantilla. Es decir, sin cuotas lo más relevante es la fuerza de largo plazo del equipo y los tiros a puerta, no los goles de los últimos partidos.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\columnwidth]{imp_mi_paper.png}
+\caption{Las diez variables con mayor MI con el resultado, con y sin cuotas (color = grupo de variables).}
+\label{fig:imp_mi}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\columnwidth]{imp_perm_paper.png}
+\caption{Aumento del \textit{log loss} al barajar cada grupo (entre paréntesis, su número de variables); media de 8 temporadas e IC 95\%.}
+\label{fig:imp_perm}
+\end{figure}
+
 \subsection{Preguntas de investigación}
 \begin{itemize}\setlength{\itemsep}{1pt}\setlength{\parsep}{0pt}\setlength{\topsep}{2pt}
 \item \textbf{P1}: no hay \textit{concept drift}: el \textit{log loss} del mercado no tiene tendencia (pendiente $p=0.62$), la ventaja de la LR sobre el mercado se mantiene en 7 de 8 temporadas y entrenar solo con las últimas tres no mejora.
