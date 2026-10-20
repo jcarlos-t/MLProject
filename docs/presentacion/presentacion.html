@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Predicción probabilística 1X2 — Presentación</title>
+<style>
+:root{
+  --bg:#ffffff; --bg2:#f1f5f9; --card:#ffffff; --ink:#0f172a; --mut:#475569;
+  --acc:#0d9488; --acc2:#2563eb; --warn:#d97706; --bad:#b91c1c; --good:#16a34a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#e2e8f0;overflow:hidden;font-family:"Inter","Segoe UI",system-ui,-apple-system,Roboto,sans-serif;color:var(--ink)}
+#stage{position:absolute;left:50%;top:50%;width:1280px;height:720px;transform-origin:center center}
+.slide{position:absolute;inset:0;width:1280px;height:720px;padding:56px 72px 60px;
+  background:radial-gradient(1100px 600px at 90% -15%,#dbeafe 0%,transparent 60%),radial-gradient(900px 500px at -10% 115%,#ccfbf1 0%,transparent 55%),var(--bg);
+  opacity:0;visibility:hidden;transform:translateX(40px);transition:opacity .45s ease,transform .45s ease,visibility 0s .45s;display:flex;flex-direction:column}
+.slide.active{opacity:1;visibility:visible;transform:none;transition:opacity .45s ease,transform .45s ease}
+.slide.past{transform:translateX(-40px)}
+h1{font-size:62px;line-height:1.08;letter-spacing:-.02em;font-weight:800}
+h2{font-size:40px;letter-spacing:-.01em;font-weight:750;margin-bottom:6px}
+.kicker{color:var(--acc);font-size:15px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;margin-bottom:10px}
+.sub{color:var(--mut);font-size:22px;line-height:1.4}
+.grow{flex:1;display:flex;gap:36px;align-items:center;min-height:0}
+.col{flex:1;min-width:0}
+.fig{background:#fff;border-radius:16px;padding:14px;border:1px solid #e2e8f0;box-shadow:0 8px 28px rgba(15,23,42,.12);display:flex;flex-direction:column;align-items:center}
+.fig img{max-width:100%;max-height:430px;object-fit:contain;display:block}
+.fig .cap{color:#334155;font-size:14px;margin-top:8px;text-align:center}
+ul{list-style:none}
+li{font-size:24px;line-height:1.4;margin:12px 0;padding-left:28px;position:relative}
+li::before{content:"";position:absolute;left:0;top:.6em;width:10px;height:10px;border-radius:3px;background:var(--acc)}
+li b{color:#020617} .mut{color:var(--mut)}
+.num{font-weight:800;color:var(--acc)}
+.chip{display:inline-block;padding:4px 12px;border-radius:999px;background:#e0f2fe;color:#075985;font-size:16px;font-weight:600;margin-right:8px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:24px}
+.kpi{background:#f8fafc;border:1px solid #e2e8f0;box-shadow:0 2px 10px rgba(15,23,42,.05);border-radius:18px;padding:22px 20px}
+.kpi .v{font-size:50px;font-weight:800;color:var(--acc);letter-spacing:-.02em}
+.kpi .l{font-size:16px;color:var(--mut);margin-top:4px}
+.foot{position:absolute;left:72px;right:72px;bottom:22px;display:flex;justify-content:space-between;color:#64748b;font-size:13px}
+.step{opacity:0;transform:translateY(10px);transition:opacity .4s ease,transform .4s ease}
+.step.show{opacity:1;transform:none}
+/* barras de log loss */
+.bars{display:flex;flex-direction:column;gap:20px;margin-top:16px}
+.bar{display:grid;grid-template-columns:230px 1fr 90px;align-items:center;gap:14px;font-size:22px}
+.bar .t{height:38px;background:#e2e8f0;border-radius:8px;overflow:hidden}
+.bar .t i{display:block;height:100%;width:0;border-radius:8px;background:linear-gradient(90deg,#2563eb,#60a5fa);transition:width 1.1s cubic-bezier(.2,.8,.2,1)}
+.bar.best .t i{background:linear-gradient(90deg,#0d9488,#2dd4bf)}
+.bar.bad .t i{background:linear-gradient(90deg,#475569,#94a3b8)}
+.bar .n{font-variant-numeric:tabular-nums;text-align:right;font-weight:700}
+.tl{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-top:6px}
+.tl div{height:44px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700}
+.tl .tr{background:#dbeafe;color:#1e3a8a}.tl .ev{background:#0d9488;color:#fff}.tl .gap{background:#e2e8f0;color:#475569}
+.table{width:100%;border-collapse:collapse;font-size:21px}
+.table th{color:var(--mut);font-weight:600;text-align:left;padding:8px 10px;border-bottom:1px solid #cbd5e1;font-size:16px;text-transform:uppercase;letter-spacing:.06em}
+.table td{padding:9px 10px;border-bottom:1px solid #e2e8f0}
+.table tr.hl td{color:#020617;background:#ccfbf1;font-weight:700}
+.q{font-size:30px;line-height:1.35;font-weight:600}
+.big{font-size:84px;font-weight:850;letter-spacing:-.03em;line-height:1}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:28px;width:100%}
+#prog{position:fixed;left:0;top:0;height:4px;background:linear-gradient(90deg,var(--acc),var(--acc2));width:0;transition:width .35s ease;z-index:9}
+#hint{position:fixed;right:14px;bottom:10px;color:#64748b;font-size:12px;z-index:9}
+@media print{
+  @page{size:1280px 720px;margin:0}
+  html,body{overflow:visible;height:auto;background:var(--bg)}
+  #stage{position:static;transform:none!important;width:1280px;height:auto}
+  .slide{position:relative;opacity:1!important;visibility:visible!important;transform:none!important;page-break-after:always;break-after:page;transition:none;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .step{opacity:1!important;transform:none!important}
+  .slide{overflow:hidden;height:720px;max-height:720px;padding-bottom:30px;break-inside:avoid}
+  .bar .t i{transition:none}
+  #prog,#hint{display:none}
+}
+</style>
+</head>
+<body>
+<div id="prog"></div><div id="hint">← → para avanzar · F pantalla completa</div>
+<div id="stage">
+
+<!-- 1. Portada -->
+<section class="slide" data-n="1">
+  <div class="grow" style="flex-direction:column;align-items:flex-start;justify-content:center;gap:0">
+    <div class="kicker">Machine Learning · UTEC · Proyecto final, etapa 2</div>
+    <h1>¿Puede un modelo<br>ganarle al <span style="color:var(--acc)">mercado</span><br>de apuestas de fútbol?</h1>
+    <p class="sub" style="margin-top:26px;max-width:880px">Predicción probabilística del resultado 1X2 en nueve ligas europeas (2014/15–2025/26): modelos, evaluación honesta y un resultado negativo bien medido.</p>
+    <div style="margin-top:34px"><span class="chip">36,150 partidos</span><span class="chip">9 ligas</span><span class="chip">12 temporadas</span></div>
+  </div>
+  <div class="foot"><span>José Luis Alva Espinoza · Juan Carlos Ticlia Maqui · Elmer José Manuel Villegaz Suárez · Joseph Anderson Cose Rojas</span><span>1</span></div>
+</section>
+
+<!-- 2. Problema -->
+<section class="slide" data-n="2">
+  <div class="kicker">El problema</div>
+  <h2>Estimar P(local), P(empate), P(visitante) antes del partido</h2>
+  <div class="grow">
+    <div class="col">
+      <ul>
+        <li class="step"><b>Tarea:</b> clasificación multiclase probabilística, <span class="mut">no solo acertar el ganador.</span></li>
+        <li class="step"><b>Métrica principal:</b> <i>log loss</i> (regla propia: premia probabilidades honestas). También RPS, Brier, AUC, ECE.</li>
+        <li class="step"><b>Referencia a vencer:</b> las cuotas de apertura convertidas en probabilidad, el <b>mercado crudo</b>.</li>
+        <li class="step"><b>Pregunta central:</b> ¿hay información —plantilla, forma, Elo, goles esperados, tiros— que el precio <b>no</b> tenga?</li>
+      </ul>
+    </div>
+    <div class="col step" style="max-width:430px">
+      <div class="kpi"><div class="v">44.4 %</div><div class="l">gana el local</div></div>
+      <div class="kpi" style="margin-top:14px"><div class="v" style="color:var(--warn)">24.9 %</div><div class="l">empate (el más difícil de predecir)</div></div>
+      <div class="kpi" style="margin-top:14px"><div class="v" style="color:var(--acc2)">30.7 %</div><div class="l">gana el visitante</div></div>
+    </div>
+  </div>
+  <div class="foot"><span>Introducción y formulación del problema</span><span>2</span></div>
+</section>
+
+<!-- 3. Datos -->
+<section class="slide" data-n="3">
+  <div class="kicker">Datos y EDA</div>
+  <h2>Dataset propio: cuotas + estadísticas + ratings FIFA/FC</h2>
+  <div class="grow">
+    <div class="col" style="flex:.8">
+      <ul>
+        <li class="step"><b>football-data.co.uk:</b> resultados, estadísticas y 159 columnas de cuotas de varias casas.</li>
+        <li class="step"><b>Ratings FIFA/EA FC:</b> calidad de plantilla y 33 habilidades del once titular.</li>
+        <li class="step"><b>Faltantes sin imputar:</b> la ausencia de una casa delata la <i>temporada</i>, no el partido.</li>
+        <li class="step"><b>Cuotas largas:</b> son partidos reales muy desequilibrados; no se recortan.</li>
+      </ul>
+    </div>
+    <div class="col fig step" style="flex:1.5"><img src="img/eda_cuotas_vs_ftr.png" alt=""><div class="cap">Cuotas de apertura según el resultado real</div></div>
+  </div>
+  <div class="foot"><span>Fuentes públicas · 296 equipos · 2013/14 solo como calentamiento</span><span>3</span></div>
+</section>
+
+<!-- 4. Metodología -->
+<section class="slide" data-n="4">
+  <div class="kicker">Diseño experimental</div>
+  <h2>Validación temporal: nunca se mira el futuro</h2>
+  <div style="margin-top:14px">
+    <div class="sub" style="font-size:18px;margin-bottom:6px">Ventana expansiva: para cada temporada de evaluación se entrena con todas las anteriores</div>
+    <div class="tl step"><div class="gap">2014–16</div><div class="gap">ajuste 16/17–17/18</div><div class="tr">entrena → 18/19</div><div class="tr">→ 19/20</div><div class="tr">→ 20/21</div><div class="tr">→ 21/22</div><div class="tr">→ 22/23</div><div class="ev">23/24 · 24/25 · 25/26</div></div>
+  </div>
+  <div class="grow" style="align-items:flex-start;margin-top:26px">
+    <div class="col"><ul>
+      <li class="step"><b>8 folds</b> de evaluación, 24,183 predicciones.</li>
+      <li class="step"><b>Hiperparámetros</b> en una ventana disjunta + validación anidada.</li>
+      <li class="step"><b>Sin fugas:</b> escalado, MI y PCA dentro de cada fold.</li>
+    </ul></div>
+    <div class="col"><ul>
+      <li class="step"><b>Bootstrap por bloques</b> (temporada–semana) para los IC.</li>
+      <li class="step"><b>Benjamini–Hochberg</b> sobre las comparaciones múltiples.</li>
+      <li class="step"><b>Dos <i>baselines</i> sin aprendizaje:</b> frecuencia base y mercado crudo.</li>
+    </ul></div>
+  </div>
+  <div class="foot"><span>K-fold aleatorio y leave-one-season-out dan 0.0002–0.0011 menos log loss: son optimistas porque ven el futuro</span><span>4</span></div>
+</section>
+
+<!-- 5. Variables -->
+<section class="slide" data-n="5">
+  <div class="kicker">Preprocesamiento e ingeniería de características</div>
+  <h2>93 variables candidatas, una decisión por evidencia</h2>
+  <div class="grow">
+    <div class="col">
+      <table class="table">
+        <tr><th>Decisión</th><th>Resultado</th></tr>
+        <tr class="step"><td>Cuotas → probabilidad</td><td>única transformación que importa</td></tr>
+        <tr class="step"><td>Escalado, NaN, asimetría, WOE</td><td>no mejoran</td></tr>
+        <tr class="step"><td>Margen de las casas</td><td>variable de tiempo (PSI 0.6–1.5): se descarta</td></tr>
+        <tr class="step"><td>Plantilla del once titular</td><td>sin ganancia frente al mejor once</td></tr>
+        <tr class="step hl"><td>Tiros a puerta (SOT10)</td><td>única que ayuda, y solo sin cuotas</td></tr>
+      </table>
+    </div>
+    <div class="col" style="max-width:380px">
+      <ul>
+        <li class="step"><b>27 variables nuevas:</b> Elo, medias exponenciales, goles esperados al estilo Dixon–Coles, contexto.</li>
+        <li class="step"><b>Sin fuga verificada:</b> se alteró el resultado de 15 partidos y el Elo previo no cambió.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>Siddiqi (WOE/IV/PSI) · Zheng y Casari (transformaciones y leakage)</span><span>5</span></div>
+</section>
+
+<!-- 6. Modelos -->
+<section class="slide" data-n="6">
+  <div class="kicker">Resultados · comparación de modelos</div>
+  <h2>La regresión logística sobre las cuotas es la mejor</h2>
+  <div class="grow" style="align-items:flex-start;margin-top:6px">
+    <div class="col" style="flex:1.2">
+      <div class="bars" id="bars">
+        <div class="bar bad"><span>Frecuencia base</span><div class="t"><i data-v="1.0727"></i></div><span class="n">1.0727</span></div>
+        <div class="bar"><span>SVM (corregido)</span><div class="t"><i data-v="0.9927"></i></div><span class="n">0.9927</span></div>
+        <div class="bar"><span>XGBoost</span><div class="t"><i data-v="0.9695"></i></div><span class="n">0.9695</span></div>
+        <div class="bar"><span>Ensemble</span><div class="t"><i data-v="0.9684"></i></div><span class="n">0.9684</span></div>
+        <div class="bar"><span>HGB · MLP</span><div class="t"><i data-v="0.9676"></i></div><span class="n">0.9676</span></div>
+        <div class="bar"><span>Mercado crudo</span><div class="t"><i data-v="0.9665"></i></div><span class="n">0.9665</span></div>
+        <div class="bar best"><span>LR sobre cuotas</span><div class="t"><i data-v="0.9656"></i></div><span class="n">0.9656</span></div>
+      </div>
+      <p class="mut" style="font-size:16px;margin-top:10px">Log loss medio, 8 temporadas (menor es mejor). El eje empieza en 0.95 para hacer visibles las diferencias.</p>
+    </div>
+    <div class="col step" style="max-width:400px"><ul>
+      <li>A mayor flexibilidad, <b>peor</b> resultado.</li>
+      <li>Árboles: profundidad óptima <b>1</b>. SVM: γ → 0.</li>
+      <li class="mut" style="font-size:20px">La relación precio–resultado es aditiva y casi lineal.</li>
+    </ul></div>
+  </div>
+  <div class="foot"><span>Añadir plantilla, forma o estadísticas a las cuotas no mejora el log loss en ningún modelo</span><span>6</span></div>
+</section>
+
+<!-- 7. Modelo final -->
+<section class="slide" data-n="7">
+  <div class="kicker">Modelo final</div>
+  <h2>Dos variables, nueve parámetros, mejora real pero pequeña</h2>
+  <div class="kpis" style="margin-top:14px">
+    <div class="kpi step"><div class="v" data-count="0.9652" data-dec="4">0.9652</div><div class="l">log loss del modelo final</div></div>
+    <div class="kpi step"><div class="v" style="color:var(--acc2)" data-count="0.9665" data-dec="4">0.9665</div><div class="l">log loss del mercado crudo</div></div>
+    <div class="kpi step"><div class="v" style="color:var(--good)">−0.0013</div><div class="l">IC 95 % [0.0007, 0.0018]<br>p ajustado 0.001</div></div>
+    <div class="kpi step"><div class="v" style="color:var(--warn)">7 / 8</div><div class="l">temporadas en que mejora</div></div>
+  </div>
+  <div class="grow" style="align-items:flex-start;margin-top:12px">
+    <div class="col"><ul>
+      <li class="step" style="font-size:22px;margin:8px 0">LR sobre <b>ln(pH/pA)</b> y <b>pD</b> de la apertura de Pinnacle, <b>C = 0.01</b>.</li>
+      <li class="step" style="font-size:22px;margin:8px 0">Corrige que el precio es <b>poco confiado</b>: favoritos ganan más y <i>longshots</i> menos de lo que implica la cuota.</li>
+      <li class="step" style="font-size:22px;margin:8px 0">Regla de elección fijada <i>antes</i> de ver resultados: IC que excluye 0 y mejora en al menos 6 de 8 temporadas.</li>
+      <li class="step" style="font-size:22px;margin:8px 0">Coeficientes estables entre temporadas (desvío máximo 0.016).</li>
+    </ul></div>
+    <div class="col step" style="max-width:430px"><div class="kpi"><div class="kicker" style="margin-bottom:8px">Pendiente de calibración del mercado</div><div style="display:flex;gap:22px;font-size:44px;font-weight:800;color:var(--warn)"><span>1.11<small style="display:block;font-size:14px;color:var(--mut);font-weight:500">local</small></span><span>1.25<small style="display:block;font-size:14px;color:var(--mut);font-weight:500">empate</small></span><span>1.13<small style="display:block;font-size:14px;color:var(--mut);font-weight:500">visitante</small></span></div><div class="l" style="margin-top:8px">&gt; 1 significa que el precio es poco confiado</div></div></div></div>
+  </div>
+  
+</section>
+
+<!-- 8. AUC -->
+<section class="slide" data-n="8">
+  <div class="kicker">AUC y calibración</div>
+  <h2>No ordena mejor los partidos: <span style="color:var(--acc)">recalibra el precio</span></h2>
+  <div class="grow">
+    <div class="col fig step" style="max-width:520px"><img src="img/final_roc_paper.png" alt="" style="max-height:440px"><div class="cap">Curvas ROC: modelo final (continuo) y mercado (discontinuo) se superponen</div></div>
+    <div class="col">
+      <table class="table step">
+        <tr><th>Resultado</th><th>AUC</th></tr>
+        <tr><td>Local</td><td><b>0.728</b></td></tr>
+        <tr><td>Empate</td><td><b>0.588</b></td></tr>
+        <tr><td>Visitante</td><td><b>0.736</b></td></tr>
+        <tr class="hl"><td>Macro</td><td>0.684 (igual que el mercado)</td></tr>
+      </table>
+      <ul style="margin-top:18px">
+        <li class="step">La ventaja es de <b>escala</b> (log loss, ECE 0.0071), no de orden (AUC).</li>
+        <li class="step">El empate casi nunca es la clase más probable: <b>13 veces en 24,183</b> partidos.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>XGBoost, SVM y el ensemble quedan peor calibrados que el propio mercado</span><span>8</span></div>
+</section>
+
+<!-- 9. Variables relevantes -->
+<section class="slide" data-n="9">
+  <div class="kicker">¿Qué variables importan?</div>
+  <h2>Con cuotas manda el precio; sin cuotas, la fuerza del equipo</h2>
+  <div class="two" style="margin-top:16px">
+    <div class="fig step"><img src="img/imp_perm_con.png" alt="" style="max-height:290px"></div>
+    <div class="fig step"><img src="img/imp_perm_sin.png" alt="" style="max-height:290px"></div>
+  </div>
+  <div class="grow" style="align-items:flex-start;margin-top:14px;gap:50px">
+    <div class="col"><ul>
+      <li class="step"><b>Con cuotas:</b> barajar el precio sube el log loss <span class="num">+0.156</span>; ningún otro grupo pasa de +0.0013.</li>
+    </ul></div>
+    <div class="col"><ul>
+      <li class="step"><b>Sin cuotas:</b> plantilla <span class="num">+0.023</span>, Elo <span class="num">+0.016</span>, tiros <span class="num">+0.009</span>; los goles recientes solo +0.004.</li>
+    </ul></div>
+  </div>
+  <div class="foot"><span>Permutación por grupos con HGB, 8 temporadas · MI da el mismo orden arriba, pero sobrevalora las habilidades (redundantes con la plantilla)</span><span>9</span></div>
+</section>
+
+<!-- 10. Mercado y dinero -->
+<section class="slide" data-n="10">
+  <div class="kicker">Eficiencia del mercado y retorno</div>
+  <h2>Cuatro pruebas independientes, la misma respuesta</h2>
+  <div class="grow">
+    <div class="col">
+      <table class="table">
+        <tr><th>Prueba</th><th>Resultado</th></tr>
+        <tr class="step"><td>Residuo del modelo sin cuotas</td><td>R² = −0.0007</td></tr>
+        <tr class="step"><td>Apertura frente a cierre</td><td>0.9640 → 0.9603; el cierre subsume a la apertura</td></tr>
+        <tr class="step"><td>Valor frente al cierre (CLV)</td><td>−0.12 pp</td></tr>
+        <tr class="step hl"><td>Backtest, modelo final (Pinnacle)</td><td>ROI −1.4 % (IC −6.3 % a +3.0 %)</td></tr>
+      </table>
+      <p class="mut step" style="font-size:18px;margin-top:14px">El +14.5 % con Bet365 sale de 233 apuestas con IC de ±38 puntos: no es evidencia de rentabilidad.</p>
+    </div>
+    <div class="col step" style="max-width:430px"><div class="kpi"><div class="v" style="color:var(--bad)">−1.4 %</div><div class="l">ROI del modelo final, Pinnacle<br>IC [−6.3 %, +3.0 %]</div></div><div class="kpi" style="margin-top:16px"><div class="v" style="color:var(--warn)">+14.5 %</div><div class="l">ROI con Bet365: 233 apuestas, IC ±38 puntos</div></div></div></div>
+  </div>
+  <div class="foot"><span>Un modelo sin cuotas pierde entre 8.5 % y 14.8 % por unidad apostada mientras promete +20 %: la «maldición del ganador»</span><span>10</span></div>
+</section>
+
+<!-- 11. Conclusiones -->
+<section class="slide" data-n="11">
+  <div class="kicker">Conclusiones</div>
+  <h2>El mercado es eficiente respecto a los fundamentos disponibles</h2>
+  <div class="grow" style="align-items:flex-start;margin-top:10px">
+    <div class="col"><ul>
+      <li class="step">Ni plantilla, ni forma, ni Elo, ni goles esperados, ni modelos más complejos <b>mejoran al precio</b>.</li>
+      <li class="step">El mejor modelo es una <b>LR de dos variables</b> que refina el precio: −0.0013 de log loss, mismo AUC.</li>
+      <li class="step">No hay <i>concept drift</i> y el <i>backtest</i> no arroja retorno significativamente positivo.</li>
+    </ul></div>
+    <div class="col"><div class="kpi step" style="padding:22px 26px"><div class="kicker" style="margin-bottom:6px;color:var(--warn)">Limitaciones y ética</div>
+      <ul>
+        <li style="font-size:19px;margin:7px 0">Apertura, no cierre: faltan alineaciones, lesiones y dinero apostado.</li>
+        <li style="font-size:19px;margin:7px 0">«Once titular» del <i>snapshot</i>, no de cada partido.</li>
+        <li style="font-size:19px;margin:7px 0">Solo ligas; mejora firme solo en Portugal y Turquía.</li>
+        <li style="font-size:19px;margin:7px 0">No es consejo de apuestas: el resultado desaconseja apostar.</li>
+      </ul></div></div>
+  </div>
+  <div class="foot"><span>Trabajo futuro: xG, alineaciones y lesiones, cuotas de cierre, otros deportes</span><span>11</span></div>
+</section>
+
+<!-- 12. Cierre -->
+<section class="slide" data-n="12">
+  <div class="grow" style="flex-direction:column;align-items:flex-start;justify-content:center;gap:0">
+    <div class="kicker">Gracias</div>
+    <div class="big">¿Preguntas?</div>
+    <p class="sub" style="margin-top:28px">Código, notebooks 01–08 e informe en el repositorio público:</p>
+    <p style="font-size:26px;margin-top:8px;color:var(--acc);font-weight:700">github.com/jcarlos-t/MLProject</p>
+    <div style="margin-top:34px"><span class="chip">Informe IEEE · 11 páginas</span><span class="chip">8 notebooks reproducibles</span><span class="chip">validación temporal</span></div>
+  </div>
+  
+</section>
+
+</div>
+<script>
+(function(){
+  var stage=document.getElementById('stage'), slides=[].slice.call(document.querySelectorAll('.slide')),
+      prog=document.getElementById('prog'), i=0, step=0;
+  function fit(){var s=Math.min(innerWidth/1280,innerHeight/720);stage.style.transform='translate(-50%,-50%) scale('+s+')';}
+  addEventListener('resize',fit);fit();
+  function steps(n){return [].slice.call(slides[n].querySelectorAll('.step'));}
+  function animate(n){
+    var s=slides[n];
+    [].forEach.call(s.querySelectorAll('.bar .t i'),function(b){b.style.width='0';requestAnimationFrame(function(){requestAnimationFrame(function(){
+      var v=parseFloat(b.dataset.v);b.style.width=Math.max(0,(v-0.95)/(1.08-0.95))*100+'%';});});});
+    [].forEach.call(s.querySelectorAll('[data-count]'),function(e){
+      var to=parseFloat(e.dataset.count),d=+e.dataset.dec||0,t0=null;
+      function f(t){if(!t0)t0=t;var p=Math.min(1,(t-t0)/900);e.textContent=(to*(1-Math.pow(1-p,3))).toFixed(d);if(p<1)requestAnimationFrame(f);}
+      requestAnimationFrame(f);});
+  }
+  function setBars(s){[].forEach.call(s.querySelectorAll('.bar .t i'),function(b){b.style.width=Math.max(0,(parseFloat(b.dataset.v)-0.95)/(1.08-0.95))*100+'%';});}
+  slides.forEach(setBars);
+  function show(n,keepSteps){
+    n=Math.max(0,Math.min(slides.length-1,n));i=n;
+    slides.forEach(function(s,k){s.classList.toggle('active',k===n);s.classList.toggle('past',k<n);});
+    var st=steps(n);step=keepSteps==='all'?st.length:0;
+    st.forEach(function(e,k){e.classList.toggle('show',k<step);});
+    prog.style.width=((n+1)/slides.length*100)+'%';
+    location.hash='#'+(n+1);animate(n);
+  }
+  function next(){var st=steps(i);if(step<st.length){st[step].classList.add('show');step++;}else if(i<slides.length-1)show(i+1);}
+  function prev(){var st=steps(i);if(step>0){step--;st[step].classList.remove('show');}else if(i>0)show(i-1,'all');}
+  addEventListener('keydown',function(e){
+    if(['ArrowRight','PageDown',' ','Enter'].indexOf(e.key)>=0){e.preventDefault();next();}
+    else if(['ArrowLeft','PageUp','Backspace'].indexOf(e.key)>=0){e.preventDefault();prev();}
+    else if(e.key==='Home')show(0);else if(e.key==='End')show(slides.length-1,'all');
+    else if(e.key==='f'||e.key==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+  });
+  addEventListener('click',function(e){if(e.clientX>innerWidth/3)next();else prev();});
+  var h=parseInt(location.hash.slice(1));show(isNaN(h)?0:h-1);
+})();
+</script>
+</body>
+</html>

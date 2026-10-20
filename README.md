@@ -11,7 +11,7 @@ Proyecto del curso de Machine Learning (UTEC), segunda etapa (modelado, evaluaci
 - Elmer José Manuel Villegaz Suárez
 - Joseph Anderson Cose Rojas
 
-**Informe:** `docs/informe.pdf` (formato IEEE, fuente en `docs/informe.tex`). **Cuadernos:** `scripts/notebooks/`, que se leen y ejecutan en orden 01 a 08 (ver `scripts/notebooks/README.md`). **Modelo final:** `scripts/data/modelo_final.json` (se genera con `08_modelo_final.ipynb`).
+**Informe:** `docs/informe.pdf` (formato IEEE, fuente en `docs/informe.tex`). **Presentación:** `docs/presentacion/presentacion.pdf` (fuente HTML en `docs/presentacion/presentacion.html`, se navega con las flechas). **Cuadernos:** `scripts/notebooks/`, que se leen y ejecutan en orden 01 a 08 (ver `scripts/notebooks/README.md`). **Modelo final:** `scripts/data/modelo_final.json` (se genera con `08_modelo_final.ipynb`).
 
 ---
 
