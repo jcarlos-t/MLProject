@@ -38,9 +38,9 @@ los mensajes del script; es seguro re-ejecutar.)
 
 ## Notas
 
-- **Flujo aguas arriba del modelado**: `../notebooks/eda.ipynb` limpia `matches_sq.csv` y exporta
-  `matches_clean.csv` (dataset limpio); `../notebooks/feature.ipynb` parte de ese archivo limpio y exporta
-  `dataset_final.csv` (33 features + target) y `backtest_odds.csv`.
+- **Flujo aguas arriba del modelado**: `../notebooks/01_eda.ipynb` limpia `matches_sq.csv` y exporta
+  `matches_clean.csv` (dataset limpio); `../notebooks/02_feature.ipynb` parte de ese archivo limpio y exporta
+  `dataset_final.csv` (33 features + target), `dataset_extra.csv` (25 variables nuevas) y `backtest_odds.csv`.
 - **Kaggle**: los 10 snapshots provienen de datasets públicos (no requieren credenciales para
   descargar vía `kagglehub`). Están definidos en `KAGGLE_DATASETS` dentro de `fetch_data.py`;
   algunos usan el filtro `fifa_version` para fijar el snapshot de esa temporada.

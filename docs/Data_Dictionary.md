@@ -3,7 +3,7 @@
 Predicción probabilística del resultado de partidos de fútbol (local / empate / visitante).
 Fuente: **football-data.co.uk** (partidos y cuotas) + **Kaggle** (ratings de jugadores FIFA/FC).
 
-> **Versión:** base `matches_sq.csv` de **2014/15–2025/26 (36,150 partidos, 225 columnas)**. Los conteos de `Únicos`/`Nulos` de las tablas se calcularon sobre esa base. Para el modelado, `scripts/notebooks/eda.ipynb` la reduce a 80 columnas sin nulos (`matches_clean.csv`) y `feature.ipynb` construye `dataset_final.csv` (36,119 filas; ver §3). La temporada 2013/14 (`matches_warmup.csv`, 2,918 partidos) solo alimenta el historial de forma y no forma parte de esta tabla.
+> **Versión:** base `matches_sq.csv` de **2014/15–2025/26 (36,150 partidos, 225 columnas)**. Los conteos de `Únicos`/`Nulos` de las tablas se calcularon sobre esa base. Para el modelado, `scripts/notebooks/01_eda.ipynb` la reduce a 80 columnas sin nulos (`matches_clean.csv`) y `02_feature.ipynb` construye `dataset_final.csv` (36,119 filas; ver §3). La temporada 2013/14 (`matches_warmup.csv`, 2,918 partidos) solo alimenta el historial de forma y no forma parte de esta tabla.
 
 ---
 
@@ -38,7 +38,7 @@ Generado por `scripts/download/process_data.py`: **join** de `matches.csv` con l
 - Las columnas vienen tipadas (int/float/str). Algunas columnas de partido se registran como
   `float` pero son conteos enteros (p. ej. `HS`); las cuotas son `float` continuas.
 - Las features derivadas de plantilla (ventaja neta `DIF_sq_top11`) **no vienen aquí**: se
-  construyen en el feature engineering (`scripts/notebooks/feature.ipynb`).
+  construyen en el feature engineering (`scripts/notebooks/02_feature.ipynb`).
 
 ### 1.1 Identificación del partido
 
@@ -395,16 +395,18 @@ Toda columna de cuota sigue el patrón `CODIGO + mercado + RESULTADO` (y una `C`
 | Archivo | Lo genera | Filas × cols | Contenido |
 |---|---|---|---|
 | `matches_warmup.csv` | `process_data.py` | 2,918 | Temporada 2013/14; solo alimenta el historial de forma, no se modela |
-| `matches_clean.csv` | `eda.ipynb` | 36,150 × 80 | Base limpia sin nulos (159 cuotas: 138 eliminadas, 3 banderas `IW*_Ausente`, 18 imputadas con KNN; `Time`, `Referee`, `HFKC/AFKC` descartadas) |
-| `dataset_final.csv` | `feature.ipynb` | 36,119 × 40 | 33 *features* (F2) + `FTR` + metadatos; excluye 31 partidos sin ninguna cuota |
-| `dataset_skills.csv` | `feature.ipynb` | 36,119 × 41 | 33 habilidades `SK_*` (local − visitante) + `FTHG`, `FTAG`, `GD` |
-| `feature_sets.json` | `feature.ipynb` | — | `F1_sin_nan` (13), `F2_completo` (33), `SK_habilidades` (33), `targets` |
-| `backtest_odds.csv` | `feature.ipynb` | 36,119 | Cuotas de apertura (B365, Pinnacle) y cierre (Pinnacle), observadas |
-| `mi_ranking.csv`, `mi_skills.csv` | `feature.ipynb` | — | Ranking de información mutua (primer 80% por fecha) |
-| `hiperparametros.json`, `hiperparametros_modelos.json` | `mercado.ipynb`, `modelo.ipynb` | — | Hiperparámetros elegidos en la ventana 2016/17–2017/18 |
-| `predicciones_oof.csv` | `mercado.ipynb` | 24,183 × 35 | Predicciones fuera de muestra de los 8 *folds* |
-| `modelos_oof.csv`, `ablation_results.csv`, `skills_clasificacion.csv`, `skills_regresion.csv`, `seleccion_caracteristicas.csv` | `modelo.ipynb` | — | Resultados de bloques, modelos, habilidades y MI vs PCA |
-| `mercado_pruebas.csv`, `backtest_resultados.csv`, `backtest_precio_blando.csv` | `mercado.ipynb` | — | Pruebas de eficiencia del mercado y del *backtest* |
+| `matches_clean.csv` | `01_eda.ipynb` | 36,150 × 74 | Base limpia **sin imputar**: 159 cuotas → 141 eliminadas (> 20% de nulos) y 18 conservadas con sus NaN estructurales; estadísticas de partido con NaN donde la fuente no las publica; `Time`, `Referee`, `HFKC/AFKC`, `HTHG/HTAG/HTR` descartadas |
+| `dataset_final.csv` | `02_feature.ipynb` | 36,119 × 40 | 33 *features* (F2) + `FTR` + metadatos; excluye 31 partidos sin ninguna cuota |
+| `dataset_skills.csv` | `02_feature.ipynb` | 36,119 × 41 | 33 habilidades `SK_*` (local − visitante) + `FTHG`, `FTAG`, `GD` |
+| `feature_sets.json` | `02_feature.ipynb` | — | `F1_sin_nan` (13), `F2_completo` (33), `SK_habilidades` (33), `targets`, `EXTRA` (grupos de variables nuevas) |
+| `dataset_extra.csv` | `02_feature.ipynb` | 36,119 × 31 | 27 variables nuevas: `REF_logit`, `REF_pD`, `MKT_STD`, `PIN_GAP`, Elo/EWMA/goles esperados/tiros a puerta, `DRAW_PROP`, `TOTG_PROP`, descanso, congestión, `SEASON_WEEK`, `NEW_H/A`, `SQz_H/DIF` |
+| `revision_variables.csv` | `02_feature.ipynb` | 93 | MI, IV, correlación con el precio, % de NaN, PSI y veredicto de cada variable |
+| `backtest_odds.csv` | `02_feature.ipynb` | 36,119 | Cuotas de apertura (B365, Pinnacle) y cierre (Pinnacle), observadas |
+| `mi_ranking.csv`, `mi_skills.csv` | `02_feature.ipynb` | — | Ranking de información mutua (primer 80% por fecha) |
+| `hiperparametros.json`, `hiperparametros_modelos.json` | `04_modelo.ipynb` (Pasos 6a y 6) | — | Hiperparámetros elegidos en la ventana 2016/17–2017/18 |
+| `predicciones_oof.csv` | `06_mercado.ipynb` | 24,183 × 35 | Predicciones fuera de muestra de los 8 *folds* |
+| `modelos_oof.csv`, `ablation_results.csv`, `skills_clasificacion.csv`, `skills_regresion.csv`, `seleccion_caracteristicas.csv` | `04_modelo.ipynb` | — | Resultados de bloques, modelos, habilidades y MI vs PCA |
+| `mercado_pruebas.csv`, `backtest_resultados.csv`, `backtest_precio_blando.csv` | `06_mercado.ipynb` | — | Pruebas de eficiencia del mercado y del *backtest* |
 
 ### 3.1 Features del modelo (`dataset_final.csv`)
 
