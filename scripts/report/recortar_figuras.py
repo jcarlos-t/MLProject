@@ -29,10 +29,22 @@ CORTES = {
     'p_liga':            ('final_liga',         [(0, 885)]),                 # 08_modelo_final: por liga
     'p_mipca':           ('res_mipca',          [(1035, 1790)]),             # 04_modelo: MI vs PCA con la k elegida
     'p_empate':          ('prep_empate',        [(0, 565)]),                 # 02_feature: empates segun goles esperados
+    'p_test_delta':      ('final_test',         [(735, 1490, 0, 440)]),      # 08_modelo_final (Paso 8): modelo final frente a cada referencia en el test
+    'p_test_temporada':  ('final_test',         [(0, 735, 445, 890)]),       # 08_modelo_final (Paso 8): por temporada, validacion y test
+}
+# figuras que se apilan en vertical: nombre de salida: (figura de origen, [(x0, x1), ...])
+APILADOS = {
+    'p_test_backtest':   ('final_test_backtest', [(0, 818), (819, 1637)]),   # 08_modelo_final (Paso 8): ROI en el test con Bet365 y con Pinnacle
 }
 for destino, (origen, cajas) in CORTES.items():
     im = Image.open(FIG / f'{origen}.png').convert('RGB')
     trozos = [im.crop((c[0], c[2] if len(c) == 4 else 0, c[1], c[3] if len(c) == 4 else im.height)) for c in cajas]
     w = sum(t.width for t in trozos); h = max(t.height for t in trozos); out = Image.new('RGB', (w, h), 'white'); x = 0
     for t in trozos: out.paste(t, (x, 0)); x += t.width
+    out.save(FIG / f'{destino}.png'); print(destino, out.size)
+for destino, (origen, cajas) in APILADOS.items():
+    im = Image.open(FIG / f'{origen}.png').convert('RGB')
+    trozos = [im.crop((c[0], 0, c[1], im.height)) for c in cajas]
+    w = max(t.width for t in trozos); h = sum(t.height for t in trozos); out = Image.new('RGB', (w, h), 'white'); y = 0
+    for t in trozos: out.paste(t, (0, y)); y += t.height
     out.save(FIG / f'{destino}.png'); print(destino, out.size)

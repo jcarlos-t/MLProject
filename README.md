@@ -49,7 +49,7 @@ Este proyecto se apoya en dos trabajos de referencia que marcan la metodología,
 | Habilidades individuales y regresión de la diferencia de goles | Stübinger 2020 | `SK_*` (33 habilidades del once, top-4 + portero) y modelos LIN/RF/HGB/ALL |
 | Ensemble de modelos | Stübinger 2020 | `ALL` de clasificación y de regresión; se compara con LR |
 | Backtest con umbral y cuotas reales | Stübinger 2020 | `06_mercado.ipynb` Paso 7: umbral elegido en validación, regla `|ŷ| > 2` |
-| Split temporal | Ambos | Ventana expansiva de 8 folds (2018/19–2025/26), nunca aleatorio |
+| Split temporal | Ambos | Ventana expansiva de 6 folds (2018/19–2023/24), nunca aleatorio; 2024/25 y 2025/26 son un test holdout que se evalúa una sola vez |
 
 ---
 
@@ -79,7 +79,7 @@ detectar **apuestas con valor (value bets)**.
    - Referencias: prior y mercado crudo.
    - **LR**, **HGB**, **XGBoost**, **SVM (RBF)**, **MLP** y **ensemble** (promedio de probabilidades), más regresión de la diferencia de goles (LIN, RF, HGB y ALL) convertida a probabilidades 1X2.
    - Hiperparámetros elegidos en la ventana 2016/17–2017/18 (disjunta de la evaluación) con desempate por simplicidad.
-5. **Evaluación** (probabilística y predictiva), validación de **ventana expansiva** con 8 folds (2018/19–2025/26):
+5. **Evaluación** (probabilística y predictiva), validación de **ventana expansiva** con 6 folds (2018/19–2023/24) y un **test holdout** (2024/25 y 2025/26, 5,999 partidos) que no participa en ninguna decisión:
    - **Log loss** (primaria), **RPS**, accuracy, acierto del ganador sin empates, RMSE/MAE de GD.
    - **Calibración**: ECE y pendiente de calibración, con normalización proporcional y por potencia del margen.
    - Comparaciones pareadas con *bootstrap*, McNemar, Benjamini–Hochberg.
@@ -89,26 +89,27 @@ detectar **apuestas con valor (value bets)**.
    - **Validación cruzada**: la temporal expansiva se compara con K-fold aleatorio y *leave-one-season-out*; selección de hiperparámetros con **validación anidada temporal**; rejillas extendidas para detectar óptimos en el borde.
    - **Inferencia**: *bootstrap* por bloques (temporada–semana) y Benjamini–Hochberg sobre todas las comparaciones.
    - **Justificación empírica del preprocesamiento**: representación de cuotas, escalado, faltantes, asimetría, WOE/IV, memoria de la forma (EWMA, Elo) y **PSI** entre temporadas.
-   - **Modelo final** (`08_modelo_final.ipynb`): regresión logística de 2 variables (`REF_logit`, `REF_pD`) sobre la cuota de apertura de Pinnacle (respaldo: consenso), sin `MKT_margin`, con `C` por validación anidada; se guarda en `modelo_final.json` / `.joblib` y se usa con `predecir_1x2`.
+   - **Modelo final** (`08_modelo_final.ipynb`): regresión logística de 2 variables (`REF_logit`, `REF_pD`) sobre la cuota de apertura de Pinnacle (respaldo: consenso), sin `MKT_margin`, con `C` por validación anidada; se **entrena solo con 2014/15–2023/24**, se guarda en `modelo_final.json` / `.joblib` y se usa con `predecir_1x2`; su evaluación en el test holdout (Paso 8) escribe `modelo_final_test.csv`.
 7. **Pruebas de eficiencia del mercado y backtest** (`06_mercado.ipynb`):
-   - Modelo de residuo (`GD − ŷ_mercado`), *encompassing* apertura vs cierre de Pinnacle, CLV frente a la línea de cierre y backtest de apuestas de una unidad con cuotas de apertura de Bet365 y Pinnacle (umbral `τ` elegido en los 4 primeros folds y reportado en los 4 últimos).
+   - Modelo de residuo (`GD − ŷ_mercado`), *encompassing* apertura vs cierre de Pinnacle, CLV frente a la línea de cierre y backtest de apuestas de una unidad con cuotas de apertura de Bet365 y Pinnacle (umbral `τ` elegido en los 4 primeros folds, reportado en los 2 últimos de validación y, sin volver a elegirlo, aplicado una vez al test holdout).
 
 ### Resultados principales
 
 | Pregunta | Resultado |
 |---|---|
-| Mejor modelo (log loss, 8 folds) | **Modelo final (LR de 2 variables sobre Pinnacle): 0.9652**; LR anterior de 3 variables 0.9656; mercado crudo 0.9665; prior 1.0727. Frente al mercado −0.0013 [−0.0018, −0.0007], p ajustado 0.001, mismo AUC (0.684) |
-| ¿Algo supera al mercado? | No: plantilla, forma, estadísticas, 33 habilidades, HGB, MLP, XGBoost, SVM y ensemble empatan o empeoran (+0.002 a +0.027) |
-| Con cuotas vs sin cuotas (ganador, sin empates) | 71.8% vs 70.0%; cuando discrepan acierta el modelo con cuotas el 57.5% (McNemar p < 0.0001); residuo R² = −0.0007 |
-| Plantilla frente a forma | Sin cuotas la plantilla mejora el log loss en 0.041; con cuotas, ≈ 0 incluso al inicio de la temporada |
-| MI vs PCA | MI gana con cuotas (8/8 folds); PCA ≥ MI sin cuotas; ninguna supera a usar todas las variables |
+| Mejor modelo (log loss, 6 folds de validación) | **Modelo final (LR de 2 variables sobre Pinnacle): 0.9653**; LR anterior de 3 variables 0.9657; mercado crudo 0.9664; prior 1.0720. Frente al mercado −0.0011 [−0.0018, −0.0004], p ajustado 0.004, mismo AUC (0.684) |
+| **Test holdout (2024/25–2025/26, 5,999 partidos)** | **Modelo final: 0.9651**; mercado crudo 0.9667; Pinnacle cruda 0.9660; LR de 3 variables 0.9652; prior 1.0750. Frente al mercado −0.0016 [−0.0026, −0.0005], p ajustado 0.012, 2/2 temporadas; frente a Pinnacle −0.0009 (p ajustado 0.063, no significativo). Sin sobreajuste a la selección (validación 0.9653). Por liga solo Turquía es significativa (en validación, Portugal) |
+| ¿Algo supera al mercado? | No: plantilla, forma, estadísticas, 33 habilidades, HGB, MLP, XGBoost, SVM y ensemble empatan o empeoran (+0.002 a +0.028) |
+| Con cuotas vs sin cuotas (ganador, sin empates) | 71.6% vs 69.7%; cuando discrepan acierta el modelo con cuotas el 57.5% (McNemar p < 0.0001); residuo R² = −0.001 |
+| Plantilla frente a forma | Sin cuotas la plantilla mejora el log loss en 0.039; con cuotas, ≈ 0 incluso al inicio de la temporada |
+| MI vs PCA | MI gana con cuotas (6/6 folds); PCA ≥ MI sin cuotas; reducir casi no mejora a usar todas las variables |
 | Discriminación (AUC) | Mercado ≈ LR (AUC macro 0.684): local 0.73, visitante 0.74, empate 0.59; el SVM tiene `P(empate)` invertida (AUC 0.44) con `probability=True` |
-| Robustez de la evaluación | K-fold aleatorio y leave-one-season-out dan 0.0002–0.0011 menos log loss (más optimistas); IC por bloques ×1.02 respecto al de partidos; 11/11 contrastes significativos tras BH; validación anidada reproduce el log loss (±0.0001) |
-| Preprocesamiento | Convertir cuotas a probabilidad importa (+0.0054 las crudas); escalado, faltantes, transformaciones y WOE no mejoran; `MKT_margin` es no estacionaria (PSI 0.6–1.5) |
-| Features de fuerza de equipo | Sin cuotas, Elo + EWMA de goles + plantilla z mejoran el benchmark 0.0054 (0.9865 → 0.9811) y los tiros a puerta ponderados otros 0.0031 (árboles, *p* ajustado 0.017); con cuotas ninguna variable nueva aporta (17 comparaciones, Benjamini–Hochberg) |
-| Mercado | El cierre subsume a la apertura (log loss Pinnacle 0.9640 → 0.9603); el modelo sin cuotas no anticipa el movimiento (r = −0.002; CLV −0.12 pp) |
+| Robustez de la evaluación | K-fold aleatorio y leave-one-season-out (solo train/val) dan 0.0001–0.0014 menos log loss (más optimistas); IC por bloques ×1.00 respecto al de partidos; 10 de 11 contrastes significativos tras BH (la LR frente al mercado no); validación anidada reproduce el log loss (±0.0001) |
+| Preprocesamiento | Convertir cuotas a probabilidad importa (+0.0057 las crudas); escalado, faltantes, transformaciones y WOE no mejoran; `MKT_margin` es no estacionaria (PSI 0.6–1.5) |
+| Features de fuerza de equipo | Sin cuotas, Elo + EWMA de goles + plantilla z mejoran el benchmark 0.0068 (≈ 0.9884 → 0.9817) y los tiros a puerta ponderados otros 0.0027 (árboles, *p* ajustado 0.017); con cuotas ninguna variable nueva aporta (17 comparaciones, Benjamini–Hochberg) |
+| Mercado | El cierre subsume a la apertura (log loss Pinnacle 0.9658 → 0.9620); el modelo sin cuotas no anticipa el movimiento (r = −0.011; CLV −0.13 pp) |
 | Calibración | Favoritos +2 a +4 pp, longshots −1.5 pp con normalización proporcional; casi desaparece con normalización por potencia |
-| Backtest | Sin cuotas: ROI −8.5% a −14.8% (promete +20%); LR con B365: +5.1% [−1.8%, +11.8%], no significativo; regla `|ŷ| > 2`: 824 apuestas, −0.8% [−3.4%, +1.8%] |
+| Backtest | Sin cuotas: ROI −11.8% a −16.5% (promete +21% a +38%); LR con B365: +9.7% [−0.7%, +20.3%], no significativo; regla `|ŷ| > 2`: 642 apuestas, −1.3% [−4.5%, +2.0%]. Modelo final en el test: Pinnacle −2.2% [−9.3%, +4.9%], B365 +11.4% [−5.5%, +29.3%]: sin retorno significativo |
 
 Conclusión: en 2014–2026 el mercado es eficiente respecto a los fundamentos disponibles; el detalle y las limitaciones están en `docs/informe.tex`.
 
@@ -137,8 +138,10 @@ ML_Project/
 │   │   ├── README.md          # guía de reproducibilidad de los datos
 │   │   ├── fetch_data.py      # descarga de datos crudos
 │   │   └── process_data.py    # solo consolidación de crudos
+│   ├── split_holdout.py       # divide dataset_final.csv en train_val.csv y test.csv (data/split/); test = 2024/25 y 2025/26
 │   ├── report/
-│   │   └── recortar_figuras.py  # recorta los paneles clave de las figuras de los cuadernos para el informe (docs/figures/p_*.png)
+│   │   ├── extraer_figuras.py   # extrae de los cuadernos ejecutados las figuras completas de docs/figures
+│   │   └── recortar_figuras.py  # recorta los paneles clave de esas figuras para el informe (docs/figures/p_*.png)
 │   ├── notebooks/
 │   │   ├── 01_eda.ipynb          # EDA de partidos -> exporta matches_clean.csv (figuras del informe)
 │   │   ├── 02_feature.ipynb      # feature engineering sobre matches_clean -> dataset_final.csv
@@ -153,6 +156,7 @@ ML_Project/
 │       ├── matches_sq.csv     # base unificada: 225 cols, 36 de squad
 │       ├── matches_clean.csv  # dataset limpio, sin nulos (lo genera 01_eda.ipynb)
 │       ├── dataset_final.csv  # 33 features + target + metadatos (lo genera 02_feature.ipynb)
+│       ├── split/             # train_val.csv (30,120 partidos, 2014/15–2023/24) y test.csv (5,999, 2024/25–2025/26); lo genera scripts/split_holdout.py
 │       ├── backtest_odds.csv  # cuotas B365 (apertura) y Pinnacle (cierre) alineadas fila a fila
 │       ├── mi_ranking.csv     # ranking de mutual information (train)
 │       ├── feature_sets.json  # F1 (sin NaN), F2 (completo), SK_habilidades y targets
@@ -162,10 +166,10 @@ ML_Project/
 │       ├── hiperparametros.json  # hiperparámetros base elegidos (04_modelo.ipynb, Paso 6a)
 │       ├── hiperparametros_modelos.json  # SVM, XGBoost, MLP (04_modelo.ipynb, Paso 6)
 │       ├── hiperparametros_extendidos.json  # rejillas extendidas (05_hiperparametros.ipynb, Paso 2)
-│       ├── modelo_final.json / modelo_final.joblib / modelo_final_oof.csv  # modelo final y sus predicciones fuera de muestra (08_modelo_final.ipynb)
+│       ├── modelo_final.json / modelo_final.joblib / modelo_final_oof.csv / modelo_final_test.csv  # modelo final (entrenado solo con train/val), sus predicciones fuera de muestra en validación y en el test (08_modelo_final.ipynb)
 │       ├── modelos_oof.csv / ablation_results.csv / skills_*.csv / seleccion_caracteristicas.csv  # salidas de 04_modelo.ipynb
 │       ├── backtest_resultados.csv / backtest_precio_blando.csv / mercado_pruebas.csv  # salidas de 06_mercado.ipynb
-│       ├── predicciones_oof.csv  # predicciones fuera de muestra de los 8 folds (06_mercado.ipynb, Paso 2)
+│       ├── predicciones_oof.csv  # predicciones fuera de muestra de los 6 folds (06_mercado.ipynb, Paso 2)
 │       ├── matches_warmup.csv # 2013/14: solo historial de forma, no se modela
 │       ├── raw/               # 117 CSVs de football-data.co.uk
 │       └── players/           # snapshots Kaggle, normalized, squad_quality, club_map
@@ -183,7 +187,10 @@ python -m venv .venv
 .venv/bin/python scripts/download/fetch_data.py    # descarga data/raw y data/players/raw
 .venv/bin/python scripts/download/process_data.py  # consolida matches.csv, players_all.csv y matches_sq.csv
 
-# 2) Notebooks (desde scripts/notebooks/, en este orden):
+# 2) Partición train/val/test (test holdout = 2024/25 y 2025/26), después de 02_feature.ipynb:
+#    .venv/bin/python scripts/split_holdout.py   # escribe data/split/train_val.csv y test.csv
+
+# 3) Notebooks (desde scripts/notebooks/, en este orden):
 #    1) 01_eda.ipynb     -> limpia matches_sq.csv y exporta matches_clean.csv (+ figuras)
 #    2) 02_feature.ipynb -> feature engineering: exporta dataset_final.csv, dataset_skills.csv, dataset_extra.csv, revision_variables.csv
 #    3) 03_preprocesamiento.ipynb -> justificación del preprocesamiento, nuevas variables, PSI
@@ -191,9 +198,9 @@ python -m venv .venv
 #    5) 05_hiperparametros.ipynb  -> validación anidada, rejillas extendidas (genera hiperparametros_extendidos.json)
 #    6) 06_mercado.ipynb -> predicciones fuera de muestra, pruebas de eficiencia del mercado y backtest
 #    7) 07_evaluacion.ipynb       -> CV, ROC/AUC, calibración, bootstrap por bloques (usa modelos_oof.csv)
-#    8) 08_modelo_final.ipynb     -> modelo final, evaluación, backtest y guardado (genera modelo_final.json)
+#    8) 08_modelo_final.ipynb     -> modelo final (solo train/val), evaluación, backtest, test holdout (Paso 8) y guardado (genera modelo_final.json)
 
-# 3) Informe: cd docs && tectonic informe.tex
+# 4) Figuras e informe: .venv/bin/python scripts/report/extraer_figuras.py && .venv/bin/python scripts/report/recortar_figuras.py; cd docs && tectonic informe.tex
 ```
 
 > **Nota**: usar siempre `.venv/bin/python`. El mapeo de clubes (EA → football-data) se hace en `scripts/download/process_data.py` (paso 5: overrides + `rapidfuzz` como respaldo). Cobertura actual de squad quality: 100% de los slots equipo-partido.

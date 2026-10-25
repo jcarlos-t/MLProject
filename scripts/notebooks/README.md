@@ -11,7 +11,9 @@ Se leen y se ejecutan **en este orden** (cada uno usa archivos que generan los a
 | 05 | `05_hiperparametros.ipynb` | ¿Sesgó la selección de hiperparámetros? ¿Había óptimos en el borde? | No: la validación anidada reproduce el resultado; el óptimo es casi lineal |
 | 06 | `06_mercado.ipynb` | ¿Quién gana, cuotas o fundamentos? ¿Dónde falla el mercado? ¿Hay dinero? | El mercado domina; no hay información que el cierre no tenga; sin retorno demostrable |
 | 07 | `07_evaluacion.ipynb` | ¿Se sostiene el resultado con AUC, calibración, otros esquemas de CV y bootstrap por bloques? | Sí; el SVM tenía la probabilidad de empate invertida |
-| 08 | `08_modelo_final.ipynb` | ¿Cuál es el modelo final y cómo se usa? | LR de 2 variables sobre Pinnacle, log loss 0.9652 |
+| 08 | `08_modelo_final.ipynb` | ¿Cuál es el modelo final, cómo se usa y qué rinde en el test holdout? | LR de 2 variables sobre Pinnacle; log loss 0.9653 en validación y **0.9651 en el test holdout** (mercado 0.9667) |
+
+**Esquema train/val/test.** Las temporadas **2024/25 y 2025/26** (5,999 partidos) son un **test holdout**: los cuadernos 03–08 las excluyen de entrenamiento, validación y elección de hiperparámetros, variables y umbrales (`TEST_SEASONS`, `TEST_MASK`), y solo se evalúan una vez en el Paso 8 de `08_modelo_final.ipynb`. La validación son 6 folds temporales (2018/19–2023/24) y el modelo final se entrena con 2014/15–2023/24. Los cuadernos 01 y 02 solo construyen datos y variables.
 
 **Por qué este orden.** Sigue las fases habituales de un proyecto de datos (comprensión de los datos → preparación → modelado → evaluación → modelo final): 01 explora y limpia; 02 y 03 preparan las variables y justifican el preprocesamiento; 04 y 05 comparan modelos y afinan hiperparámetros; 06 prueba el modelo contra el mercado y hace el *backtest*; 07 valida con más métricas; 08 entrena y exporta el modelo elegido. Cada cuaderno solo lee archivos de cuadernos anteriores, así que se pueden ejecutar de principio a fin sin errores.
 
