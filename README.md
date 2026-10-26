@@ -77,7 +77,7 @@ detectar **apuestas con valor (value bets)**.
 3. **Selección de features**: `mutual_info_classif` como ranking (primer 80% por fecha) y comparación MI vs PCA con validación temporal en `04_modelo.ipynb` (Paso 9).
 4. **Modelos** (`scripts/notebooks/04_modelo.ipynb`, `06_mercado.ipynb`):
    - Referencias: prior y mercado crudo.
-   - **LR**, **HGB**, **XGBoost**, **SVM (RBF)**, **MLP** y **ensemble** (promedio de probabilidades), más regresión de la diferencia de goles (LIN, RF, HGB y ALL) convertida a probabilidades 1X2.
+   - **LR**, **HGB**, **XGBoost**, **SVM (RBF)**, **MLP** y **ensemble** (promedio de probabilidades). La **LR sobre las tres variables de mercado es el *baseline*** (el modelo más simple con aprendizaje); el *prior* y el mercado crudo son *referencias sin aprendizaje*. Además, regresión de la diferencia de goles (LIN, RF, HGB y ALL) convertida a probabilidades 1X2.
    - Hiperparámetros elegidos en la ventana 2016/17–2017/18 (disjunta de la evaluación) con desempate por simplicidad.
 5. **Evaluación** (probabilística y predictiva), validación de **ventana expansiva** con 6 folds (2018/19–2023/24) y un **test holdout** (2024/25 y 2025/26, 5,999 partidos) que no participa en ninguna decisión:
    - **Log loss** (primaria), **RPS**, accuracy, acierto del ganador sin empates, RMSE/MAE de GD.
@@ -97,8 +97,8 @@ detectar **apuestas con valor (value bets)**.
 
 | Pregunta | Resultado |
 |---|---|
-| Mejor modelo (log loss, 6 folds de validación) | **Modelo final (LR de 2 variables sobre Pinnacle): 0.9653**; LR anterior de 3 variables 0.9657; mercado crudo 0.9664; prior 1.0720. Frente al mercado −0.0011 [−0.0018, −0.0004], p ajustado 0.004, mismo AUC (0.684) |
-| **Test holdout (2024/25–2025/26, 5,999 partidos)** | **Modelo final: 0.9651**; mercado crudo 0.9667; Pinnacle cruda 0.9660; LR de 3 variables 0.9652; prior 1.0750. Frente al mercado −0.0016 [−0.0026, −0.0005], p ajustado 0.012, 2/2 temporadas; frente a Pinnacle −0.0009 (p ajustado 0.063, no significativo). Sin sobreajuste a la selección (validación 0.9653). Por liga solo Turquía es significativa (en validación, Portugal) |
+| Mejor modelo (log loss, 6 folds de validación) | **Modelo final (LR de 2 variables sobre Pinnacle): 0.9653**; *baseline* (LR de 3 variables sobre cuotas) 0.9657; mercado crudo 0.9664; prior 1.0720. Frente al mercado −0.0011 [−0.0018, −0.0004], p ajustado 0.004, mismo AUC (0.684) |
+| **Test holdout (2024/25–2025/26, 5,999 partidos)** | **Modelo final: 0.9651**; mercado crudo 0.9667; Pinnacle cruda 0.9660; *baseline* (LR de 3 variables) 0.9652; prior 1.0750. Frente al mercado −0.0016 [−0.0026, −0.0005], p ajustado 0.012, 2/2 temporadas; frente a Pinnacle −0.0009 (p ajustado 0.063, no significativo). Sin sobreajuste a la selección (validación 0.9653). Por liga solo Turquía es significativa (en validación, Portugal) |
 | ¿Algo supera al mercado? | No: plantilla, forma, estadísticas, 33 habilidades, HGB, MLP, XGBoost, SVM y ensemble empatan o empeoran (+0.002 a +0.028) |
 | Con cuotas vs sin cuotas (ganador, sin empates) | 71.6% vs 70.4% (el benchmark sin cuotas usa plantilla z + Elo + EWMA + habilidades); cuando discrepan acierta el modelo con cuotas el 56.6% (McNemar p < 0.0001); residuo R² = −0.0006 |
 | Plantilla frente a forma | Sin cuotas la plantilla mejora el log loss en 0.039; con cuotas, ≈ 0 incluso al inicio de la temporada |

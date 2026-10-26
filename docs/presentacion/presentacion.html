@@ -144,7 +144,7 @@ li b{color:#020617} .mut{color:var(--mut)}
     <div class="col"><ul>
       <li class="step"><b>Bootstrap por bloques</b> (temporada–semana) para los IC.</li>
       <li class="step"><b>Benjamini–Hochberg</b> sobre las comparaciones múltiples.</li>
-      <li class="step"><b>Dos <i>baselines</i> sin aprendizaje:</b> frecuencia base y mercado crudo.</li>
+      <li class="step"><b><i>Baseline</i>:</b> regresión logística sobre las cuotas. <b>Referencias sin aprendizaje:</b> frecuencia base y mercado crudo.</li>
     </ul></div>
   </div>
   <div class="foot"><span>K-fold aleatorio y leave-one-season-out dan 0.0001–0.0014 menos log loss: son optimistas porque ven el futuro</span><span>4</span></div>
@@ -182,13 +182,13 @@ li b{color:#020617} .mut{color:var(--mut)}
   <div class="grow" style="align-items:flex-start;margin-top:6px">
     <div class="col" style="flex:1.2">
       <div class="bars" id="bars">
-        <div class="bar bad"><span>Frecuencia base</span><div class="t"><i data-v="1.0720"></i></div><span class="n">1.0720</span></div>
+        <div class="bar bad"><span>Frecuencia base (ref.)</span><div class="t"><i data-v="1.0720"></i></div><span class="n">1.0720</span></div>
         <div class="bar"><span>SVM (corregido)</span><div class="t"><i data-v="0.9940"></i></div><span class="n">0.9940</span></div>
         <div class="bar"><span>XGBoost</span><div class="t"><i data-v="0.9697"></i></div><span class="n">0.9697</span></div>
         <div class="bar"><span>Ensemble</span><div class="t"><i data-v="0.9688"></i></div><span class="n">0.9688</span></div>
         <div class="bar"><span>HGB · MLP</span><div class="t"><i data-v="0.9680"></i></div><span class="n">0.9680</span></div>
-        <div class="bar"><span>Mercado crudo</span><div class="t"><i data-v="0.9664"></i></div><span class="n">0.9664</span></div>
-        <div class="bar best"><span>LR sobre cuotas</span><div class="t"><i data-v="0.9657"></i></div><span class="n">0.9657</span></div>
+        <div class="bar"><span>Mercado crudo (ref.)</span><div class="t"><i data-v="0.9664"></i></div><span class="n">0.9664</span></div>
+        <div class="bar best"><span>LR sobre cuotas (<i>baseline</i>)</span><div class="t"><i data-v="0.9657"></i></div><span class="n">0.9657</span></div>
       </div>
       <p class="mut" style="font-size:16px;margin-top:10px">Log loss medio, 6 temporadas de validación (menor es mejor). El eje empieza en 0.95 para hacer visibles las diferencias.</p>
     </div>
@@ -236,7 +236,7 @@ li b{color:#020617} .mut{color:var(--mut)}
   <div class="grow" style="align-items:flex-start;margin-top:12px">
     <div class="col"><ul>
       <li class="step" style="font-size:21px;margin:7px 0"><b>Sin sobreajuste a la selección:</b> 0.9651 en test frente a 0.9653 en validación.</li>
-      <li class="step" style="font-size:21px;margin:7px 0">Frente a <b>Pinnacle cruda</b> (−0.0009, p ajustado 0.063) y a la LR de tres variables (−0.0001): <b>sin diferencia significativa</b>.</li>
+      <li class="step" style="font-size:21px;margin:7px 0">Frente a <b>Pinnacle cruda</b> (−0.0009, p ajustado 0.063) y al <b><i>baseline</i></b> (LR de tres variables, −0.0001): <b>sin diferencia significativa</b>.</li>
       <li class="step" style="font-size:21px;margin:7px 0">Mismo AUC que el mercado (0.683). En <b>2025/26</b> Pinnacle cubre solo 47.8 %, y la ventaja es igual (−0.0016).</li>
       <li class="step" style="font-size:21px;margin:7px 0">Por liga solo <b>Turquía</b> es significativa (en validación fue Portugal): mejora pequeña y repartida.</li>
     </ul></div>
