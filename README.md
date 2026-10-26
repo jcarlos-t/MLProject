@@ -48,7 +48,7 @@ Este proyecto se apoya en dos trabajos de referencia que marcan la metodología,
 | Selección de features con MI frente a PCA | Tammouch 2024 | `04_modelo.ipynb` Paso 9: 2 conjuntos × 3 modelos × 9 métodos |
 | Habilidades individuales y regresión de la diferencia de goles | Stübinger 2020 | `SK_*` (33 habilidades del once, top-4 + portero) y modelos LIN/RF/HGB/ALL |
 | Ensemble de modelos | Stübinger 2020 | `ALL` de clasificación y de regresión; se compara con LR |
-| Backtest con umbral y cuotas reales | Stübinger 2020 | `06_mercado.ipynb` Paso 7: umbral elegido en validación, regla `|ŷ| > 2` |
+| Backtest con umbral y cuotas reales | Stübinger 2020 | `06_mercado.ipynb` Paso 7 y `08_modelo_final.ipynb`: umbral `τ` fijo a priori (0.02), regla `|ŷ| > 2` |
 | Split temporal | Ambos | Ventana expansiva de 6 folds (2018/19–2023/24), nunca aleatorio; 2024/25 y 2025/26 son un test holdout que se evalúa una sola vez |
 
 ---
@@ -98,20 +98,39 @@ detectar **apuestas con valor (value bets)**.
 | Pregunta | Resultado |
 |---|---|
 | Mejor modelo (log loss, 6 folds de validación) | **Modelo final (LR de 2 variables sobre Pinnacle): 0.9653**; *baseline* (LR de 3 variables sobre cuotas) 0.9657; mercado crudo 0.9664; prior 1.0720. Frente al mercado −0.0011 [−0.0018, −0.0004], p ajustado 0.004, mismo AUC (0.684) |
-| **Test holdout (2024/25–2025/26, 5,999 partidos)** | **Modelo final: 0.9651**; mercado crudo 0.9667; Pinnacle cruda 0.9660; *baseline* (LR de 3 variables) 0.9652; prior 1.0750. Frente al mercado −0.0016 [−0.0026, −0.0005], p ajustado 0.012, 2/2 temporadas; frente a Pinnacle −0.0009 (p ajustado 0.063, no significativo). Sin sobreajuste a la selección (validación 0.9653). Por liga solo Turquía es significativa (en validación, Portugal) |
-| ¿Algo supera al mercado? | No: plantilla, forma, estadísticas, 33 habilidades, HGB, MLP, XGBoost, SVM y ensemble empatan o empeoran (+0.002 a +0.028) |
-| Con cuotas vs sin cuotas (ganador, sin empates) | 71.6% vs 70.4% (el benchmark sin cuotas usa plantilla z + Elo + EWMA + habilidades); cuando discrepan acierta el modelo con cuotas el 56.6% (McNemar p < 0.0001); residuo R² = −0.0006 |
+| **Test holdout (2024/25–2025/26, 5,999 partidos)** | **Modelo final: 0.9651**; mercado crudo 0.9667; Pinnacle cruda 0.9660; *baseline* (LR de 3 variables) 0.9652; prior 1.0750. Frente al consenso de 4 casas −0.0016 [−0.0027, −0.0006], p ajustado 0.004, 2/2 temporadas (la referencia más débil); frente a Pinnacle cruda −0.0009 (p ajustado 0.045, en el límite; 0.063 con otra semilla del bootstrap) y frente al *baseline* −0.0001 (sin diferencia). Casi toda la ventaja está en los 4,440 partidos con Pinnacle observada (−0.0020 vs consenso); con el respaldo de consenso (1,559 partidos, 2025/26) es −0.0004 y no se distingue de 0. Sin sobreajuste a la selección (validación 0.9653). Por liga solo Turquía es significativa (en validación, Portugal) |
+| ¿Algo supera al mercado? | No: plantilla, forma, estadísticas, 33 habilidades, HGB, MLP, XGBoost, SVM y ensemble empatan o empeoran (+0.001 a +0.028) |
+| Con cuotas vs sin cuotas (ganador, sin empates) | 71.6% vs 70.4% (el benchmark sin cuotas usa plantilla z + Elo + EWMA + habilidades); cuando discrepan acierta el modelo con cuotas el 56.1% (McNemar p < 0.0001); residuo R² = −0.0006 |
 | Plantilla frente a forma | Sin cuotas la plantilla mejora el log loss en 0.039; con cuotas, ≈ 0 incluso al inicio de la temporada |
-| MI vs PCA | MI gana con cuotas (6/6 folds); PCA ≥ MI sin cuotas; reducir casi no mejora a usar todas las variables |
+| MI vs PCA | MI gana con cuotas (6/6 folds); PCA ≥ MI sin cuotas; reducir casi no mejora a usar todas las variables (la mayor ganancia: MLP con MI-5 y cuotas, 0.0024) |
 | Discriminación (AUC) | Mercado ≈ LR (AUC macro 0.684): local 0.73, visitante 0.74, empate 0.59; el SVM tiene `P(empate)` invertida (AUC 0.44) con `probability=True` |
-| Robustez de la evaluación | K-fold aleatorio y leave-one-season-out (solo train/val) dan 0.0001–0.0014 menos log loss (más optimistas); IC por bloques ×1.00 respecto al de partidos; 10 de 11 contrastes significativos tras BH (la LR frente al mercado no); validación anidada reproduce el log loss (±0.0001) |
+| Robustez de la evaluación | K-fold aleatorio y leave-one-season-out (solo train/val) dan 0.0001–0.0014 menos log loss (más optimistas); IC por bloques ×1.01 respecto al de partidos; 9 de 11 contrastes significativos tras BH (no lo son la LR ni el MLP frente al mercado crudo); validación anidada reproduce el log loss (±0.0001) |
 | Preprocesamiento | Convertir cuotas a probabilidad importa (+0.0057 las crudas); escalado, faltantes, transformaciones y WOE no mejoran; `MKT_margin` es no estacionaria (PSI 0.6–1.5) |
 | Features de fuerza de equipo | Sin cuotas, Elo + EWMA de goles + plantilla z mejoran el benchmark 0.0068 (≈ 0.9884 → 0.9817; ya aplicado en el benchmark de `06_mercado.ipynb`) y los tiros a puerta ponderados otros 0.0027 (árboles, *p* ajustado 0.017); con cuotas ninguna variable nueva aporta (17 comparaciones, Benjamini–Hochberg) |
-| Mercado | El cierre subsume a la apertura (log loss Pinnacle 0.9658 → 0.9620); el modelo sin cuotas no anticipa el movimiento (r = −0.027, el cierre corrige sus discrepancias; CLV −0.17 pp frente a −0.02 pp del lado contrario) |
+| Mercado | El cierre subsume a la apertura (log loss Pinnacle 0.9658 → 0.9620); el modelo sin cuotas no anticipa el movimiento (r = −0.030, el cierre corrige sus discrepancias; CLV −0.18 pp frente a −0.01 pp del lado contrario) |
 | Calibración | Favoritos +2 a +4 pp, longshots −1.5 pp con normalización proporcional; casi desaparece con normalización por potencia |
-| Backtest | Sin cuotas: ROI −8.4% a −13.8% (promete +16% a +31%); LR con B365: +9.7% [−0.4%, +20.4%], no significativo; regla `|ŷ| > 2`: 718 apuestas, −3.1% [−6.4%, +0.1%] (no reproduce el +1.58% del paper). Modelo final en el test: Pinnacle −2.2% [−9.3%, +4.9%], B365 +11.4% [−5.5%, +29.3%]: sin retorno significativo |
+| Backtest | Sin cuotas: ROI −7.7% a −12.5% (promete +15% a +31%); LR con B365 y τ = 0: +9.7% [+0.4%, +21.3%] (1 de 40 configuraciones sin corrección múltiple; con Pinnacle −6.4%), no se sostiene; regla `|ŷ| > 2`: 706 apuestas, −2.9% [−6.3%, +0.1%] (no reproduce el +1.58% del paper). Modelo final en el test (τ = 0.02 fijo): Pinnacle −2.6% [−17.9%, +11.4%], B365 +11.4% [−4.1%, +29.0%]: sin retorno significativo |
 
 Conclusión: en 2014–2026 el mercado es eficiente respecto a los fundamentos disponibles; el detalle y las limitaciones están en `docs/informe.tex`.
+
+### Cómo leer el proyecto (tres preguntas)
+
+Todo el repositorio responde a una sola pregunta (¿se puede predecir 1X2 mejor que las cuotas?) desde tres ángulos. Cada cuaderno sirve a uno:
+
+| Pregunta | Respuesta | Cuadernos |
+|---|---|---|
+| **A. ¿Qué predicen los fundamentos?** (plantilla, forma, Elo, habilidades, sin cuotas) | Algo (70.4% de acierto del ganador frente a 71.6% con cuotas), pero menos que el precio | 01–03, 04 (bloques), 06 (Paso 1) |
+| **B. ¿Qué modelo es mejor sobre las cuotas?** | Ninguno supera a una regresión logística; el modelo final es una LR de 2 variables sobre Pinnacle que **recalibra** el precio. Frente a Pinnacle cruda y al *baseline* no hay ventaja clara | 04, 05, 07, 08 |
+| **C. ¿Hay dinero?** | No se demuestra | 06 (Pasos 5–7), 08 (Paso 6 y 8) |
+
+### Salvedades que conviene recordar
+
+- **Sesgo de selección.** Variables, reglas de aceptación y modelo final se eligieron mirando las mismas 6 temporadas de validación; solo el test holdout (2024/25–2025/26) está libre de él. La corrección de Benjamini–Hochberg es por familia, no global.
+- **El test mezcla dos regímenes de precio.** En 2025/26 Pinnacle cubre 48% de los partidos y William Hill 0%; el resto usa el consenso. Se reporta separado (`08_modelo_final.ipynb`, Paso 8).
+- **Fuga leve que no llega al test** (el MLP ya no usa `early stopping`: su número de iteraciones se elige en la ventana de ajuste): el corte del 80% de `02_feature` (ranking MI y revisión de variables) incluye partidos de validación; las habilidades faltantes se rellenan con la media de liga y temporada.
+- **Snapshots de jugadores heterogéneos:** FC25 (julio de 2025, fin de temporada) y FC26 (21 sep. 2025, un mes dentro de la temporada) frente a los demás (lanzamiento). Solo afectan a las dos temporadas del test, y ningún resultado reportado las usa.
+- **Umbral del backtest.** `τ` = 0.02 se fija a priori (antes se elegía por ROI máximo de validación, que es inestable).
+- **Reproducibilidad.** Los datos crudos no se versionan; `scripts/download/manifest.py` guarda y comprueba sus huellas SHA-256 (`data_manifest.json`) para saber si una descarga nueva difiere de la usada en el informe.
 
 ### Cómo se trataron los problemas típicos
 

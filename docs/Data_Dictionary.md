@@ -31,7 +31,7 @@ Fuente: **football-data.co.uk** (partidos y cuotas) + **Kaggle** (ratings de jug
 
 Generado por `scripts/download/process_data.py`: **join** de `matches.csv` con la
 **squad quality** de local y visitante vía `Season|Div|Team` → `club_map.csv`
-(un snapshot por temporada, sin mezclar versiones ni lookahead).
+(un snapshot por temporada, sin mezclar versiones; **ojo con el momento de captura**: los snapshots de FIFA 15 a FC 24 son de lanzamiento, el de FC 25 es de julio de 2025 —final de la temporada 2024/25, con el rendimiento ya reflejado— y el de FC 26 es del 21 de septiembre de 2025, un mes dentro de 2025/26; las dos últimas temporadas son el test holdout y ningún resultado reportado usa sus habilidades).
 
 - **Una fila = 1 partido**. Cobertura: **9 ligas × 12 temporadas (2014/15–2025/26)** = **36,150 partidos**.
 - **36,150 filas × 225 columnas** = 189 del partido + 36 de plantilla (17×2 lados + 2 flags).

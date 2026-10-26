@@ -185,15 +185,16 @@ li b{color:#020617} .mut{color:var(--mut)}
         <div class="bar bad"><span>Frecuencia base (ref.)</span><div class="t"><i data-v="1.0720"></i></div><span class="n">1.0720</span></div>
         <div class="bar"><span>SVM (corregido)</span><div class="t"><i data-v="0.9940"></i></div><span class="n">0.9940</span></div>
         <div class="bar"><span>XGBoost</span><div class="t"><i data-v="0.9697"></i></div><span class="n">0.9697</span></div>
-        <div class="bar"><span>Ensemble</span><div class="t"><i data-v="0.9688"></i></div><span class="n">0.9688</span></div>
-        <div class="bar"><span>HGB · MLP</span><div class="t"><i data-v="0.9680"></i></div><span class="n">0.9680</span></div>
+        <div class="bar"><span>Ensemble</span><div class="t"><i data-v="0.9686"></i></div><span class="n">0.9686</span></div>
+        <div class="bar"><span>HGB</span><div class="t"><i data-v="0.9680"></i></div><span class="n">0.9680</span></div>
+        <div class="bar"><span>MLP</span><div class="t"><i data-v="0.9671"></i></div><span class="n">0.9671</span></div>
         <div class="bar"><span>Mercado crudo (ref.)</span><div class="t"><i data-v="0.9664"></i></div><span class="n">0.9664</span></div>
         <div class="bar best"><span>LR sobre cuotas (<i>baseline</i>)</span><div class="t"><i data-v="0.9657"></i></div><span class="n">0.9657</span></div>
       </div>
       <p class="mut" style="font-size:16px;margin-top:10px">Log loss medio, 6 temporadas de validación (menor es mejor). El eje empieza en 0.95 para hacer visibles las diferencias.</p>
     </div>
     <div class="col step" style="max-width:400px"><ul>
-      <li>A mayor flexibilidad, <b>peor</b> resultado.</li>
+      <li>Ningún modelo flexible supera a la LR (el MLP, el mejor de ellos, +0.0014).</li>
       <li>Árboles: profundidad óptima <b>1</b>. SVM: γ → 0.</li>
       <li class="mut" style="font-size:20px">La relación precio–resultado es aditiva y casi lineal.</li>
     </ul></div>
@@ -204,18 +205,18 @@ li b{color:#020617} .mut{color:var(--mut)}
 <!-- 7. Modelo final -->
 <section class="slide" data-n="7">
   <div class="kicker">Modelo final</div>
-  <h2>Dos variables, nueve parámetros, mejora real pero pequeña</h2>
+  <h2>Dos variables, nueve parámetros: recalibra la cuota, no aporta información nueva</h2>
   <div class="kpis" style="margin-top:14px">
     <div class="kpi step"><div class="v" data-count="0.9653" data-dec="4">0.9653</div><div class="l">log loss del modelo final (validación)</div></div>
-    <div class="kpi step"><div class="v" style="color:var(--acc2)" data-count="0.9664" data-dec="4">0.9664</div><div class="l">log loss del mercado crudo</div></div>
-    <div class="kpi step"><div class="v" style="color:var(--good)">−0.0011</div><div class="l">IC 95 % [0.0004, 0.0018]<br>p ajustado 0.004</div></div>
+    <div class="kpi step"><div class="v" style="color:var(--acc2)" data-count="0.9664" data-dec="4">0.9664</div><div class="l">log loss del mercado crudo (consenso de 4 casas)</div></div>
+    <div class="kpi step"><div class="v" style="color:var(--good)">−0.0011</div><div class="l">vs. consenso, IC 95 % [0.0004, 0.0018]<br>p ajustado 0.004<br><b>vs. Pinnacle cruda: −0.0004, no significativo</b></div></div>
     <div class="kpi step"><div class="v" style="color:var(--warn)">5 / 6</div><div class="l">temporadas en que mejora</div></div>
   </div>
   <div class="grow" style="align-items:flex-start;margin-top:12px">
     <div class="col"><ul>
       <li class="step" style="font-size:22px;margin:8px 0">LR sobre <b>ln(pH/pA)</b> y <b>pD</b> de la apertura de Pinnacle, <b>C = 0.01</b>, entrenada solo con 2014/15–2023/24.</li>
       <li class="step" style="font-size:22px;margin:8px 0">Corrige que el precio es <b>poco confiado</b>: favoritos ganan más y <i>longshots</i> menos de lo que implica la cuota.</li>
-      <li class="step" style="font-size:22px;margin:8px 0">Regla de elección fijada <i>antes</i> de ver resultados: IC que excluye 0 y mejora en al menos 5 de 6 temporadas.</li>
+      <li class="step" style="font-size:22px;margin:8px 0">Regla de elección: IC que excluye 0 y mejora en 5 de 6 temporadas, escrita tras explorar las mismas 6 temporadas (sesgo de selección: el test es la comprobación honesta).</li>
       <li class="step" style="font-size:22px;margin:8px 0">Coeficientes estables entre temporadas (desvío máximo 0.017).</li>
     </ul></div>
     <div class="col step" style="max-width:430px"><div class="kpi"><div class="kicker" style="margin-bottom:8px">Pendiente de calibración del mercado</div><div style="display:flex;gap:22px;font-size:44px;font-weight:800;color:var(--warn)"><span>1.10<small style="display:block;font-size:14px;color:var(--mut);font-weight:500">local</small></span><span>1.27<small style="display:block;font-size:14px;color:var(--mut);font-weight:500">empate</small></span><span>1.13<small style="display:block;font-size:14px;color:var(--mut);font-weight:500">visitante</small></span></div><div class="l" style="margin-top:8px">&gt; 1 significa que el precio es poco confiado</div></div></div></div>
@@ -230,14 +231,14 @@ li b{color:#020617} .mut{color:var(--mut)}
   <div class="kpis" style="margin-top:14px">
     <div class="kpi step"><div class="v" data-count="0.9651" data-dec="4">0.9651</div><div class="l">log loss del modelo final en test<br>(validación: 0.9653)</div></div>
     <div class="kpi step"><div class="v" style="color:var(--acc2)" data-count="0.9667" data-dec="4">0.9667</div><div class="l">log loss del mercado crudo en test</div></div>
-    <div class="kpi step"><div class="v" style="color:var(--good)">−0.0016</div><div class="l">IC 95 % [−0.0026, −0.0005]<br>p ajustado 0.012</div></div>
+    <div class="kpi step"><div class="v" style="color:var(--good)">−0.0016</div><div class="l">vs. consenso, IC 95 % [−0.0027, −0.0006]<br>p ajustado 0.004</div></div>
     <div class="kpi step"><div class="v" style="color:var(--warn)">2 / 2</div><div class="l">temporadas del test en que mejora</div></div>
   </div>
   <div class="grow" style="align-items:flex-start;margin-top:12px">
     <div class="col"><ul>
       <li class="step" style="font-size:21px;margin:7px 0"><b>Sin sobreajuste a la selección:</b> 0.9651 en test frente a 0.9653 en validación.</li>
-      <li class="step" style="font-size:21px;margin:7px 0">Frente a <b>Pinnacle cruda</b> (−0.0009, p ajustado 0.063) y al <b><i>baseline</i></b> (LR de tres variables, −0.0001): <b>sin diferencia significativa</b>.</li>
-      <li class="step" style="font-size:21px;margin:7px 0">Mismo AUC que el mercado (0.683). En <b>2025/26</b> Pinnacle cubre solo 47.8 %, y la ventaja es igual (−0.0016).</li>
+      <li class="step" style="font-size:21px;margin:7px 0">Frente a <b>Pinnacle cruda</b> (−0.0009, p ajustado 0.045: <b>en el límite</b>) y al <b><i>baseline</i></b> (LR de tres variables, −0.0001): <b>sin diferencia clara</b>. El consenso es la referencia más débil.</li>
+      <li class="step" style="font-size:21px;margin:7px 0">Mismo AUC que el mercado (0.683). Con <b>Pinnacle observada</b> (4,440 partidos) la ventaja es −0.0020; con el <b>respaldo de consenso</b> (1,559, 2025/26) es −0.0004 y no se distingue de 0.</li>
       <li class="step" style="font-size:21px;margin:7px 0">Por liga solo <b>Turquía</b> es significativa (en validación fue Portugal): mejora pequeña y repartida.</li>
     </ul></div>
     <div class="col fig step" style="max-width:470px"><img src="img/p_test_temporada.png" alt="" style="max-height:300px"><div class="cap">Modelo final − mercado por temporada (milésimas de log loss); con borde, las dos del test</div></div>
@@ -297,14 +298,14 @@ li b{color:#020617} .mut{color:var(--mut)}
         <tr><th>Prueba</th><th>Resultado</th></tr>
         <tr class="step"><td>Residuo del modelo sin cuotas</td><td>R² = −0.0006</td></tr>
         <tr class="step"><td>Apertura frente a cierre</td><td>0.9658 → 0.9620; el cierre subsume a la apertura</td></tr>
-        <tr class="step"><td>Valor frente al cierre (CLV)</td><td>−0.17 pp (lado contrario: −0.02)</td></tr>
-        <tr class="step hl"><td>Backtest, modelo final (Pinnacle), test</td><td>ROI −2.2 % (IC −9.3 % a +4.9 %)</td></tr>
+        <tr class="step"><td>Valor frente al cierre (CLV)</td><td>−0.18 pp (lado contrario: −0.01)</td></tr>
+        <tr class="step hl"><td>Backtest, modelo final (Pinnacle), test</td><td>ROI −2.6 % (IC −17.9 % a +11.4 %), τ = 0.02 fijo</td></tr>
       </table>
-      <p class="mut step" style="font-size:18px;margin-top:14px">El +11.4 % con Bet365 en el test (606 apuestas) tiene IC de −5.5 % a +29.3 %: incluye pérdidas, no es evidencia de rentabilidad.</p>
+      <p class="mut step" style="font-size:18px;margin-top:14px">El +11.4 % con Bet365 en el test (606 apuestas) tiene IC de −4.1 % a +29.0 %: incluye pérdidas, no es evidencia de rentabilidad.</p>
     </div>
-    <div class="col step" style="max-width:430px"><div class="kpi"><div class="v" style="color:var(--bad)">−2.2 %</div><div class="l">ROI del modelo final en test, Pinnacle<br>IC [−9.3 %, +4.9 %]</div></div><div class="kpi" style="margin-top:16px"><div class="v" style="color:var(--warn)">+11.4 %</div><div class="l">ROI con Bet365 en test: 606 apuestas, IC [−5.5 %, +29.3 %]</div></div></div></div>
+    <div class="col step" style="max-width:430px"><div class="kpi"><div class="v" style="color:var(--bad)">−2.6 %</div><div class="l">ROI del modelo final en test, Pinnacle (482 apuestas)<br>IC [−17.9 %, +11.4 %]</div></div><div class="kpi" style="margin-top:16px"><div class="v" style="color:var(--warn)">+11.4 %</div><div class="l">ROI con Bet365 en test: 606 apuestas, IC [−4.1 %, +29.0 %]</div></div></div></div>
   </div>
-  <div class="foot"><span>Un modelo sin cuotas (con Elo y EWMA) pierde entre 8.4 % y 13.8 % por unidad apostada mientras promete +16 % a +31 %: la «maldición del ganador»</span><span>11</span></div>
+  <div class="foot"><span>Un modelo sin cuotas (con Elo y EWMA) pierde entre 7.7 % y 12.5 % por unidad apostada mientras promete +15 % a +31 %: la «maldición del ganador»</span><span>11</span></div>
 </section>
 
 <!-- 11. Conclusiones -->
@@ -314,13 +315,13 @@ li b{color:#020617} .mut{color:var(--mut)}
   <div class="grow" style="align-items:flex-start;margin-top:10px">
     <div class="col"><ul>
       <li class="step">Ni plantilla, ni forma, ni Elo, ni goles esperados, ni modelos más complejos <b>mejoran al precio</b>.</li>
-      <li class="step">El mejor modelo es una <b>LR de dos variables</b> que refina el precio: −0.0011 de log loss en validación y −0.0016 en el <b>test holdout</b>, mismo AUC.</li>
+      <li class="step">El mejor modelo es una <b>LR de dos variables</b> que <b>recalibra</b> el precio de Pinnacle: −0.0011 (validación) y −0.0016 (<b>test</b>) frente al consenso, pero sin ventaja clara frente a Pinnacle ni al <i>baseline</i>; mismo AUC.</li>
       <li class="step">No hay <i>concept drift</i> y el <i>backtest</i> no arroja retorno significativamente positivo.</li>
     </ul></div>
     <div class="col"><div class="kpi step" style="padding:22px 26px"><div class="kicker" style="margin-bottom:6px;color:var(--warn)">Limitaciones y ética</div>
       <ul>
         <li style="font-size:19px;margin:7px 0">Apertura, no cierre: faltan alineaciones, lesiones y dinero apostado.</li>
-        <li style="font-size:19px;margin:7px 0">Test de solo dos temporadas; Pinnacle cubre 47.8 % de 2025/26.</li>
+        <li style="font-size:19px;margin:7px 0">Test de solo dos temporadas; Pinnacle cubre 47.8 % de 2025/26; sesgo de selección en validación.</li>
         <li style="font-size:19px;margin:7px 0">«Once titular» del <i>snapshot</i>, no de cada partido.</li>
         <li style="font-size:19px;margin:7px 0">Solo ligas; mejora por liga inestable (Portugal en validación, Turquía en test).</li>
         <li style="font-size:19px;margin:7px 0">No es consejo de apuestas: el resultado desaconseja apostar.</li>

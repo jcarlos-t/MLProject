@@ -49,7 +49,7 @@ joseph.cose@utec.edu.pe}
 \maketitle
 
 \begin{abstract}
-Se estima la probabilidad de cada resultado 1X2 de un partido de fútbol con información disponible antes del partido y se evalúa si alguna fuente distinta de las cuotas de apertura aporta información que el mercado no tenga. Se construyó un dataset propio de 36{,}150 partidos de nueve ligas europeas (2014/15--2025/26) que combina cuotas de varias casas, estadísticas de partido y ratings FIFA/FC de los jugadores. La validación es temporal con ventana expansiva (6 temporadas, 2018/19--2023/24), con hiperparámetros elegidos en una ventana disjunta, y las dos últimas temporadas (2024/25 y 2025/26, 5{,}999 partidos) se reservan como \textit{test holdout} que solo se evalúa una vez al final. Las métricas son son probabilísticas (\textit{log loss}, RPS, AUC y calibración) con intervalos \textit{bootstrap} por bloques y corrección de Benjamini--Hochberg. Se toma como \textit{baseline} la regresión logística sobre las cuotas, y se comparan con él (y con dos referencias sin aprendizaje: la frecuencia base y el mercado crudo) \textit{boosting}, XGBoost, SVM, MLP y \textit{ensembles}. El modelo final es una regresión logística de dos variables sobre la cuota de apertura de Pinnacle, entrenada solo con 2014/15--2023/24: \textit{log loss} 0.9653 en validación y \textbf{0.9651 en el test holdout}, frente a 0.9664 y 0.9667 del mercado crudo y 1.0720 y 1.0750 de la frecuencia base (mejora de 0.0011 en validación y de 0.0016 en test, IC $[0.0005, 0.0026]$, \textit{p} ajustado $0.012$), con el mismo AUC (0.684) que el mercado. Ni la plantilla, ni la forma, ni Elo, ni goles esperados, ni las habilidades individuales, ni modelos más complejos mejoran al precio; solo los tiros a puerta aportan, y únicamente sin cuotas. El cierre del mercado subsume a la apertura y el \textit{backtest} no arroja un retorno significativamente positivo. En 2014--2026 el mercado es eficiente respecto a la información de fundamentos disponible. El código está en \url{https://github.com/jcarlos-t/MLProject.git}.
+Se estima la probabilidad de cada resultado 1X2 de un partido de fútbol con información disponible antes del partido y se evalúa si alguna fuente distinta de las cuotas de apertura aporta información que el mercado no tenga. Se construyó un dataset propio de 36{,}150 partidos de nueve ligas europeas (2014/15--2025/26) que combina cuotas de varias casas, estadísticas de partido y ratings FIFA/FC de los jugadores. La validación es temporal con ventana expansiva (6 temporadas, 2018/19--2023/24), con hiperparámetros elegidos en una ventana disjunta, y las dos últimas temporadas (2024/25 y 2025/26, 5{,}999 partidos) se reservan como \textit{test holdout} que solo se evalúa una vez al final. Las métricas son probabilísticas (\textit{log loss}, RPS, AUC y calibración) con intervalos \textit{bootstrap} por bloques y corrección de Benjamini--Hochberg. Se toma como \textit{baseline} la regresión logística sobre las cuotas, y se comparan con él (y con dos referencias sin aprendizaje: la frecuencia base y el mercado crudo) \textit{boosting}, XGBoost, SVM, MLP y \textit{ensembles}. El modelo final es una regresión logística de dos variables sobre la cuota de apertura de Pinnacle, entrenada solo con 2014/15--2023/24: \textit{log loss} 0.9653 en validación y \textbf{0.9651 en el test holdout}, frente a 0.9664 y 0.9667 del mercado crudo y 1.0720 y 1.0750 de la frecuencia base (mejora de 0.0011 en validación y de 0.0016 en test, IC $[0.0006, 0.0027]$, \textit{p} ajustado $0.004$). Esa ventaja es frente al consenso de cuatro casas; frente a Pinnacle cruda (0.0009) está en el límite de la significación y frente al \textit{baseline} de tres variables (0.0001) no existe, y el AUC (0.684) es el mismo que el del mercado: el modelo recalibra el precio, no lo mejora ordenando partidos. Ni la plantilla, ni la forma, ni Elo, ni goles esperados, ni las habilidades individuales, ni modelos más complejos mejoran al precio; solo los tiros a puerta aportan, y únicamente sin cuotas. El cierre del mercado subsume a la apertura y el \textit{backtest} no arroja un retorno significativamente positivo. En 2014--2026 el mercado es eficiente respecto a la información de fundamentos disponible. El código está en \url{https://github.com/jcarlos-t/MLProject.git}.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -91,7 +91,7 @@ que elimina el margen de la casa, y un \textit{value bet} existe si $\hat p_c\,o
 \label{sec:datos}
 
 \subsection{Fuente y variable objetivo}
-El dataset es de construcción propia con dos fuentes públicas: \textbf{football-data.co.uk} \cite{footballdata} (Premier League, Bundesliga, La Liga, Serie A, Ligue 1, Eredivisie, Primeira Liga, Süper Lig y Pro League; resultados, estadísticas de partido y 159 columnas de cuotas) y los \textbf{ratings FIFA/EA FC} \cite{kagglefifa} (12 \textit{snapshots} anuales, de los que se derivan la calidad de plantilla y 33 habilidades del once titular). Se modelan las temporadas 2014/15--2025/26 (36{,}150 partidos, 296 equipos); la 2013/14 (2{,}918 partidos) se usa solo como calentamiento del historial. La variable objetivo \texttt{FTR} está levemente desbalanceada (Tabla~\ref{tab:ftr}) y se usa como \textit{prior}, sin rebalancear. El \textit{snapshot} de FC~25 es de final de temporada; como 2024/25 queda fuera de entrenamiento y validación (es parte del test holdout, Sección~\ref{sec:diseno}) y el modelo final solo usa cuotas, su posible \textit{look-ahead} no afecta a ningún resultado.
+El dataset es de construcción propia con dos fuentes públicas: \textbf{football-data.co.uk} \cite{footballdata} (Premier League, Bundesliga, La Liga, Serie A, Ligue 1, Eredivisie, Primeira Liga, Süper Lig y Pro League; resultados, estadísticas de partido y 159 columnas de cuotas) y los \textbf{ratings FIFA/EA FC} \cite{kagglefifa} (12 \textit{snapshots} anuales, de los que se derivan la calidad de plantilla y 33 habilidades del once titular). Se modelan las temporadas 2014/15--2025/26 (36{,}150 partidos, 296 equipos); la 2013/14 (2{,}918 partidos) se usa solo como calentamiento del historial. La variable objetivo \texttt{FTR} está levemente desbalanceada (Tabla~\ref{tab:ftr}) y se usa como \textit{prior}, sin rebalancear. Los \textit{snapshots} no son homogéneos en el tiempo: los de FIFA~15 a FC~24 son de lanzamiento (septiembre), el de FC~25 se capturó en julio de 2025 (final de la temporada 2024/25, con el rendimiento ya reflejado en los ratings) y el de FC~26 el 21 de septiembre de 2025 (un mes dentro de 2025/26). Las dos temporadas afectadas son las del test holdout (Sección~\ref{sec:diseno}), y ni el modelo final (solo cuotas) ni los modelos sin cuotas evaluados en validación las usan, de modo que este \textit{look-ahead} no afecta a ningún resultado reportado; sí afectaría a cualquier uso futuro de las habilidades en esas temporadas.
 
 \begin{table}[H]
 \caption{Bloques de variables del dataset (el diccionario completo está en el repositorio).}
@@ -175,7 +175,7 @@ Las cuotas anticipan el resultado: la cuota del local es sistemáticamente menor
 \end{figure}
 
 \subsection{Sesgos y \textit{data leakage}}
-Los riesgos de fuga son: (i) estadísticas del propio partido, que se transforman en medias móviles que no incluyen el partido actual; (ii) \textit{look-ahead} temporal: toda agregación usa solo partidos anteriores, el \textit{split} es cronológico y hiperparámetros y umbrales se eligen en ventanas disjuntas de la evaluación, y las dos últimas temporadas quedan como test holdout que nunca participa en una decisión (un recálculo independiente de 600 valores del historial coincide exactamente); (iii) imputación: una versión inicial imputaba la plantilla junto con estadísticas del partido y se corrigió; (iv) cuotas de cierre, que se publican justo antes del partido y por eso no son \textit{features}; (v) sesgo de cobertura: las estadísticas no existen en cuatro ligas antes de 2017/18 y Pinnacle cubre solo el 48\% de 2025/26.
+Los riesgos de fuga son: (i) estadísticas del propio partido, que se transforman en medias móviles que no incluyen el partido actual; (ii) \textit{look-ahead} temporal: toda agregación usa solo partidos anteriores, el \textit{split} es cronológico, los hiperparámetros de los modelos base se eligen en una ventana disjunta de la evaluación, el umbral $\tau$ del \textit{backtest} se fija a priori ($\tau=0.02$) y las dos últimas temporadas quedan como test holdout que nunca participa en una decisión (un recálculo independiente de 600 valores del historial coincide exactamente); (iii) imputación: una versión inicial imputaba la plantilla junto con estadísticas del partido y se corrigió; (iv) cuotas de cierre, que se publican justo antes del partido y por eso no son \textit{features}; (v) sesgo de cobertura: las estadísticas no existen en cuatro ligas antes de 2017/18 y Pinnacle cubre solo el 48\% de 2025/26. Quedan dos salvedades que no son fuga hacia el test pero sí rompen la regla de ``todo dentro del \textit{fold}'': (a) el ranking de información mutua y la tabla de revisión de variables de la Sección~\ref{sec:preproc} se calculan con las fechas anteriores al 5 de febrero de 2024 (un corte del 80\%, verificado con una aserción contra el inicio del test), que incluye partidos de los \textit{folds} de validación; (b) las habilidades que faltan para un equipo se rellenan con la media de su liga y temporada, que usa los ratings de otros clubes de la misma temporada (nunca resultados).
 
 \section{Preprocesamiento e ingeniería de características}
 \label{sec:preproc}
@@ -249,7 +249,7 @@ cuotas + todo lo nuevo & $+0.0004$ & $[-0.0004, +0.0011]$ \\
 \section{Metodología y modelos}
 \label{sec:modelos}
 
-Hay tres puntos de comparación. Dos son \textbf{referencias sin aprendizaje}: el \textbf{\textit{prior}} (frecuencias de $H/D/A$ del entrenamiento) y el \textbf{mercado crudo} (probabilidades implícitas del consenso, Ec.~\ref{eq:oddsprob}). El tercero es el \textbf{\textit{baseline}}: la \textbf{regresión logística sobre las tres variables de mercado} (LR (cuotas); \texttt{MKT\_logit}, \texttt{MKT\_pD} y \texttt{MKT\_margin}), el modelo más simple con aprendizaje. Un modelo aporta valor solo si mejora al \textit{prior}, al \textit{baseline} y, sobre todo, al mercado. Los modelos de clasificación son: la \textbf{regresión logística} (LR, estandarizada, regularización $\ell_2$; con las variables de mercado es el \textit{baseline}, y también se evalúa con F1); \textbf{HGB} (\textit{gradient boosting} con histogramas, tolera NaN) y \textbf{XGBoost}, que reciben F2; \textbf{SVM} con núcleo RBF (entrenado con las 9{,}000 filas más recientes por su coste cuadrático) y \textbf{MLP} (ReLU, \textit{early stopping}, tres semillas), que reciben F1; y un \textit{ensemble} que promedia sus probabilidades. Para la tarea de regresión de $GD$ se usan regresión lineal, Random Forest y HGB (y SVR en una comprobación), promediados como en \cite{stubinger2020}, y se convierten en probabilidades 1X2 con una regresión logística multinomial ajustada en la temporada anterior.
+Hay tres puntos de comparación. Dos son \textbf{referencias sin aprendizaje}: el \textbf{\textit{prior}} (frecuencias de $H/D/A$ del entrenamiento) y el \textbf{mercado crudo} (probabilidades implícitas del consenso, Ec.~\ref{eq:oddsprob}). El tercero es el \textbf{\textit{baseline}}: la \textbf{regresión logística sobre las tres variables de mercado} (LR (cuotas); \texttt{MKT\_logit}, \texttt{MKT\_pD} y \texttt{MKT\_margin}), el modelo más simple con aprendizaje. Un modelo aporta valor solo si mejora al \textit{prior}, al \textit{baseline} y, sobre todo, al mercado. Los modelos de clasificación son: la \textbf{regresión logística} (LR, estandarizada, regularización $\ell_2$; con las variables de mercado es el \textit{baseline}, y también se evalúa con F1); \textbf{HGB} (\textit{gradient boosting} con histogramas, tolera NaN) y \textbf{XGBoost}, que reciben F2; \textbf{SVM} con núcleo RBF (entrenado con las 9{,}000 filas más recientes por su coste cuadrático) y \textbf{MLP} (ReLU, sin \textit{early stopping}, con el número de iteraciones elegido en la ventana de ajuste, tres semillas), que reciben F1; y un \textit{ensemble} que promedia sus probabilidades. Para la tarea de regresión de $GD$ se usan regresión lineal, Random Forest y HGB (y SVR en una comprobación), promediados como en \cite{stubinger2020}, y se convierten en probabilidades 1X2 con una regresión logística multinomial ajustada en la temporada anterior.
 
 Se añaden dos análisis de selección de variables: MI univariada (\textit{top-}$k$) frente a PCA, ambos calculados solo con el entrenamiento de cada \textit{fold}. Se consideran dos escenarios: \textbf{con cuotas}, donde el precio es una variable dominante, y \textbf{sin cuotas}, el modelo de fundamentos que se compara con el mercado. Para que ese \textit{benchmark} sea el mejor posible usa la combinación ganadora de la Sección~\ref{sec:preproc} (plantilla normalizada por liga, Elo y medias exponenciales de puntos y de diferencia de goles) más las 33 habilidades, y no la forma de cinco partidos.
 
@@ -278,7 +278,7 @@ Train/val (6 \textit{folds}) & 2018/19--2023/24; cada \textit{fold} se entrena c
 
 \textbf{Validación temporal.} Para cada una de las seis temporadas de validación (2018/19--2023/24; 18{,}184 predicciones) se entrena con todas las anteriores y se predice la temporada siguiente. Un K-fold aleatorio y \textit{leave-one-season-out}, restringidos también a train/val, dan un \textit{log loss} entre 0.0001 y 0.0014 menor (más optimista, porque ven el futuro), con el mismo orden de modelos.
 
-\textbf{Hiperparámetros.} Se eligen con rejilla corta en una ventana de ajuste disjunta (2016/17--2017/18), criterio de menor \textit{log loss} y desempate por la configuración más simple si la diferencia es menor a 0.0005. La Tabla~\ref{tab:hiper} resume los valores. Dos comprobaciones: la \textbf{validación anidada} (elegir en las dos temporadas previas a cada \textit{fold}) reproduce el \textit{log loss} con diferencia $\le0.0001$, y las \textbf{rejillas extendidas} (Fig.~\ref{fig:rejillas}) mostraron que el óptimo de los árboles tiene profundidad 1 y el del SVM tiende a $\gamma\to0$: la relación entre el precio y el resultado es aditiva y casi lineal.
+\textbf{Hiperparámetros.} Hay tres criterios distintos, según el modelo, y conviene no confundirlos: (1) los modelos base (LR sobre cuotas, HGB, XGBoost, SVM, MLP y los regresores RF/HGB sin cuotas) se eligen una sola vez en la ventana 2016/17--2017/18 y se reutilizan sin cambios en los seis \textit{folds}; (2) la validación anidada de la Sección~\ref{sec:diseno} (dos temporadas previas a cada \textit{fold}) es solo una comprobación de que ese criterio no sesga; (3) el $C$ del modelo final se elige aparte, con las dos últimas temporadas de train/val (2022/23--2023/24), porque es el único modelo que se despliega: por eso el \textit{baseline} usa $C=0.05$ y el modelo final $C=0.01$. Los regresores RF/HGB sin cuotas se reajustaron con el bloque vigente (plantilla normalizada, Elo, medias exponenciales y habilidades). Se eligen con rejilla corta en una ventana de ajuste disjunta (2016/17--2017/18), criterio de menor \textit{log loss} y desempate por la configuración más simple si la diferencia es menor a 0.0005. La Tabla~\ref{tab:hiper} resume los valores. Dos comprobaciones: la \textbf{validación anidada} (elegir en las dos temporadas previas a cada \textit{fold}) reproduce el \textit{log loss} con diferencia $\le0.0001$, y las \textbf{rejillas extendidas} (Fig.~\ref{fig:rejillas}) mostraron que el óptimo de los árboles tiene profundidad 1 y el del SVM tiende a $\gamma\to0$: la relación entre el precio y el resultado es aditiva y casi lineal.
 
 \begin{table}[H]
 \caption{Hiperparámetros elegidos (ventana 2016/17--2017/18) y, entre paréntesis, con las rejillas extendidas.}
@@ -292,17 +292,17 @@ LR & $C=0.05$ (anidada: $0.01$ en 5 de 6 \textit{folds}) \\
 HGB & \texttt{lr}=0.03, profundidad 2, \texttt{leaf}=50, 100 iter. (extendida: profundidad 1) \\
 XGBoost & \texttt{lr}=0.03, profundidad 2, 100 árboles, \texttt{mcw}=5 (profundidad 1, \texttt{lr}=0.1) \\
 SVM (RBF) & $C=0.1$, $\gamma=0.01$ ($C=0.3$, $\gamma=10^{-4}$, probabilidades corregidas) \\
-MLP & capas $(32,16)$, $\alpha=1$ (capa $(16)$, $\alpha=1$) \\
+MLP & capa $(16)$, $\alpha=1$, 100 iteraciones, sin \textit{early stopping} \\
 \bottomrule
 \end{tabularx}
 \label{tab:hiper}
 \end{table}
 
-\textbf{Inferencia.} Las comparaciones son pareadas por partido, con \textit{bootstrap} por bloques (temporada--semana, 244 bloques), que produce intervalos solo 2\% más anchos que el de partidos sueltos, y corrección de Benjamini--Hochberg \cite{benjamini1995} sobre las 11 comparaciones de \textit{log loss} entre modelos. La calibración se mide con diagramas de fiabilidad con intervalos de Wilson y con el ECE de tramos de igual ancho y de igual masa.
+\textbf{Inferencia.} Las comparaciones son pareadas por partido, con \textit{bootstrap} por bloques (temporada--semana, 244 bloques), que produce intervalos solo 2\% más anchos que el de partidos sueltos, y corrección de Benjamini--Hochberg \cite{benjamini1995} sobre las 11 comparaciones de \textit{log loss} entre modelos. La corrección se aplica dentro de cada familia de comparaciones, no sobre todo lo probado en los cuadernos (decenas de variantes de variables, rejillas y reglas): los $p$ de validación deben leerse como descriptivos, y el test holdout es la única comparación sin selección previa. La calibración se mide con diagramas de fiabilidad con intervalos de Wilson y con el ECE de tramos de igual ancho y de igual masa.
 
-\textbf{Eficiencia del mercado.} Cuatro pruebas independientes: modelo de residuo sobre $GD-\hat y_{M}$; correlación entre la discrepancia del modelo con la apertura y el movimiento apertura$\to$cierre de Pinnacle, con prueba de \textit{encompassing}; valor frente a la línea de cierre (CLV); y \textit{backtest} de una unidad con cuotas de apertura de Bet365 y Pinnacle, con $\tau$ elegido en los cuatro primeros \textit{folds}, reportado en los dos últimos de validación y, sin volver a elegirlo, aplicado una vez al test holdout.
+\textbf{Eficiencia del mercado.} Cuatro pruebas independientes: modelo de residuo sobre $GD-\hat y_{M}$; correlación entre la discrepancia del modelo con la apertura y el movimiento apertura$\to$cierre de Pinnacle, con prueba de \textit{encompassing}; valor frente a la línea de cierre (CLV); y \textit{backtest} de una unidad con cuotas de apertura de Bet365 y Pinnacle, con $\tau=0.02$ fijado a priori (no optimizado: elegirlo por el ROI máximo de validación resultó inestable), reportado en los dos últimos \textit{folds} de validación y aplicado una vez al test holdout.
 
-\textbf{Control de fugas y reproducibilidad.} Todo ajuste (escalado, selección de variables, PCA, recalibración, hiperparámetros) se hace dentro del \textit{fold} de entrenamiento y nunca ve la temporada que se predice, y ninguna fila del test holdout puede entrar en un ajuste porque los \textit{folds} terminan en 2023/24 (los cuadernos lo comprueban con una aserción); los umbrales y las reglas de decisión se fijaron antes de ver los resultados de evaluación. Los \textit{notebooks} están numerados del 01 al 08 en el orden del flujo (EDA, variables, preprocesamiento, modelos, hiperparámetros, mercado, evaluación y modelo final), las semillas son fijas y el repositorio incluye las predicciones fuera de muestra con las que se generan todas las figuras y tablas del informe.
+\textbf{Control de fugas y reproducibilidad.} Todo ajuste (escalado, selección de variables, PCA, recalibración, hiperparámetros) se hace dentro del \textit{fold} de entrenamiento y nunca ve la temporada que se predice, y ninguna fila del test holdout puede entrar en un ajuste porque los \textit{folds} terminan en 2023/24 (los cuadernos lo comprueban con una aserción), con las dos salvedades de la Sección~\ref{sec:datos}. El umbral $\tau$ del \textit{backtest} se fija a priori; en cambio, las reglas de aceptación del modelo final (IC que excluye 0 y mejora en al menos 5 de 6 temporadas) se escribieron después de explorar los cuadernos 04--07 sobre las mismas seis temporadas, por lo que los resultados de validación tienen un sesgo de selección que solo el test holdout está libre de tener. Los \textit{notebooks} están numerados del 01 al 08 en el orden del flujo (EDA, variables, preprocesamiento, modelos, hiperparámetros, mercado, evaluación y modelo final), las semillas son fijas y el repositorio incluye las predicciones fuera de muestra con las que se generan todas las figuras y tablas del informe.
 
 \begin{figure}[H]
 \centering
@@ -316,7 +316,7 @@ MLP & capas $(32,16)$, $\alpha=1$ (capa $(16)$, $\alpha=1$) \\
 \label{sec:resultados}
 
 \subsection{Bloques de variables y comparación de modelos}
-La Fig.~\ref{fig:bloques} responde a la hipótesis (i) y a la pregunta P2: añadir plantilla, forma o estadísticas de partido a las cuotas no mejora el \textit{log loss} en ningún modelo (mejora en 0--1 de 6 \textit{folds} con LR y en 1--4 con HGB). Sin cuotas, la plantilla sí ayuda a la forma ($\Delta=-0.039$, IC $[-0.043,-0.035]$), pero con cuotas su efecto es $+0.0003$ y es nulo incluso al inicio de la temporada. La Tabla~\ref{tab:modelos} y la Fig.~\ref{fig:modelos} comparan los modelos: la regresión logística sobre las cuotas es la mejor en \textit{log loss}, RPS, calibración y es indistinguible en AUC; todos los demás son significativamente peores, y a mayor flexibilidad, peor resultado. Con las rejillas extendidas XGBoost baja a 0.9680 y el SVM con probabilidades corregidas a 0.9840 (el SVM original tenía una probabilidad de empate invertida, AUC $0.44$), sin alcanzar a la LR.
+La Fig.~\ref{fig:bloques} responde a la hipótesis (i) y a la pregunta P2: añadir plantilla, forma o estadísticas de partido a las cuotas no mejora el \textit{log loss} en ningún modelo (mejora en 0--1 de 6 \textit{folds} con LR y en 1--4 con HGB). Sin cuotas, la plantilla sí ayuda a la forma ($\Delta=-0.039$, IC $[-0.043,-0.035]$), pero con cuotas su efecto es $+0.0003$ y es nulo incluso al inicio de la temporada. La Tabla~\ref{tab:modelos} y la Fig.~\ref{fig:modelos} comparan los modelos: la regresión logística sobre las cuotas es la mejor en \textit{log loss}, RPS, calibración y es indistinguible en AUC; todos los demás son significativamente peores que ella (el MLP por $0.0014$; frente al mercado crudo ya no se distingue), y ningún modelo flexible la supera. Con las rejillas extendidas XGBoost baja a 0.9680 y el SVM con probabilidades corregidas a 0.9840 (el SVM original tenía una probabilidad de empate invertida, AUC $0.44$), sin alcanzar a la LR.
 
 \begin{figure}[H]
 \centering
@@ -339,8 +339,8 @@ La Fig.~\ref{fig:bloques} responde a la hipótesis (i) y a la pregunta P2: añad
 Mercado crudo (referencia) & 0.9664 & 0.1953 & 0.684 & 0.0126 \\
 LR (cuotas), \textit{baseline} & 0.9657 & 0.1951 & 0.684 & 0.0077 \\
 HGB (F1) & 0.9680 \scriptsize{(+0.0022)} & 0.1955 & 0.681 & 0.0084 \\
-MLP (F1) & 0.9682 \scriptsize{(+0.0025)} & 0.1957 & 0.681 & 0.0099 \\
-\textit{Ensemble} & 0.9688 \scriptsize{(+0.0031)} & 0.1958 & 0.682 & 0.0145 \\
+MLP (F1) & 0.9671 \scriptsize{(+0.0014)} & 0.1954 & 0.682 & 0.0086 \\
+\textit{Ensemble} & 0.9686 \scriptsize{(+0.0029)} & 0.1957 & 0.682 & 0.0142 \\
 XGBoost (F2) & 0.9697 \scriptsize{(+0.0039)} & 0.1961 & 0.681 & 0.0166 \\
 SVM (F1) & 0.9940 \scriptsize{(+0.0282)} & 0.2014 & 0.626 & 0.0233 \\
 \midrule
@@ -360,7 +360,7 @@ SVM (F1) & 0.9940 \scriptsize{(+0.0282)} & 0.2014 & 0.626 & 0.0233 \\
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.95\columnwidth]{p_modelos_delta.png}
-\caption{$\Delta$ por partido frente al \textit{baseline} (LR) y frente al mercado (positivo = peor; IC pareado 95\%; entre paréntesis, temporadas en que mejora). Los contrastes entre modelos siguen siendo significativos tras Benjamini--Hochberg (10 de 11; la LR frente al mercado crudo no lo es, \textit{p} ajustado $0.073$).}
+\caption{$\Delta$ por partido frente al \textit{baseline} (LR) y frente al mercado (positivo = peor; IC pareado 95\%; entre paréntesis, temporadas en que mejora). Los contrastes entre modelos siguen siendo significativos tras Benjamini--Hochberg en 9 de 11; las excepciones son la LR frente al mercado crudo (\textit{p} ajustado $0.080$) y el MLP frente al mercado crudo ($+0.0007$, \textit{p} ajustado $0.224$).}
 \label{fig:modelos_delta}
 \end{figure}
 
@@ -388,7 +388,7 @@ El modelo final es una LR de dos variables, $\ln(p_H/p_A)$ y $p_D$ de la cuota d
 
 \subsection{Evaluación en el test holdout}
 \label{sec:test}
-Las temporadas 2024/25 y 2025/26 (5{,}999 partidos) no participaron en ninguna decisión: ni en variables, ni en $C$, ni en $\tau$, ni en el entrenamiento. Con el modelo final ya entrenado, se evalúan una sola vez (Tabla~\ref{tab:test}, Figs.~\ref{fig:test} y~\ref{fig:test_temp}). El \textit{log loss} en el test (0.9651) es igual al de validación (0.9653), de modo que \textbf{no hay sobreajuste a la selección}, y la ventaja sobre el mercado crudo se mantiene: $-0.0016$ ($[-0.0026,-0.0005]$, \textit{p} ajustado $0.012$), con el mismo valor en las dos temporadas ($-0.0016$ en 2024/25 y en 2025/26, pese a que en 2025/26 Pinnacle cubra solo el 47.8\% y el resto use el respaldo). Frente a Pinnacle cruda la diferencia ($-0.0009$, \textit{p} ajustado $0.063$) y frente al \textit{baseline} (LR de tres variables, $-0.0001$) no es significativa. La discriminación es la del mercado (AUC macro 0.683) y el ECE empeora respecto a validación (0.0168 frente a 0.0093), pero también el del mercado (0.0221 frente a 0.0143) y el modelo sigue por debajo de él. Por liga solo Turquía es significativa tras Benjamini--Hochberg ($-0.0045$, \textit{p} ajustado $0.027$), mientras que en validación lo era Portugal: la mejora por liga no se repite y es mejor describirla como pequeña y repartida. Con el umbral elegido en validación, el \textit{backtest} da $-2.2\%$ con Pinnacle ($[-9.3\%,+4.9\%]$, 1{,}425 apuestas) y $+11.4\%$ con Bet365 ($[-5.5\%,+29.3\%]$, 606 apuestas): el intervalo incluye pérdidas y no se puede afirmar rentabilidad (Fig.~\ref{fig:test_bt}).
+Las temporadas 2024/25 y 2025/26 (5{,}999 partidos) no participaron en ninguna decisión: ni en variables, ni en $C$, ni en el entrenamiento, y el umbral $\tau$ del \textit{backtest} se fijó a priori. Con el modelo final ya entrenado, se evalúan una sola vez (Tabla~\ref{tab:test}, Figs.~\ref{fig:test} y~\ref{fig:test_temp}). El \textit{log loss} en el test (0.9651) es igual al de validación (0.9653), de modo que \textbf{no hay sobreajuste a la selección}, y la ventaja sobre el mercado crudo se mantiene: $-0.0016$ ($[-0.0027,-0.0006]$, \textit{p} ajustado $0.004$), con el mismo valor en las dos temporadas ($-0.0016$ en 2024/25 y en 2025/26). Pero esa es la comparación más favorable: el consenso es la referencia más débil. Frente a Pinnacle cruda la diferencia ($-0.0009$) está en el límite ($[-0.0018,-0.0001]$, \textit{p} ajustado $0.045$; con otra semilla del \textit{bootstrap} salió $0.063$) y frente al \textit{baseline} (LR de tres variables, $-0.0001$, $p=0.71$) no existe. Como en 2025/26 Pinnacle cubre solo el 47.8\%, se separó el test según el origen del precio (Tabla~\ref{tab:test_cob}): con Pinnacle observada (4{,}440 partidos) el modelo mejora al consenso en $0.0020$ y a Pinnacle cruda en $0.0011$ ($[-0.0022,+0.0000]$), y con el respaldo de consenso (1{,}559 partidos) las diferencias son $0.0004$ y no se distinguen de 0. Es decir, casi toda la ventaja viene de los partidos con precio de Pinnacle, y no de un aprendizaje sobre el consenso. La discriminación es la del mercado (AUC macro 0.683) y el ECE empeora respecto a validación (0.0168 frente a 0.0093), pero también el del mercado (0.0221 frente a 0.0143) y el modelo sigue por debajo de él. Por liga solo Turquía es significativa tras Benjamini--Hochberg ($-0.0045$, \textit{p} ajustado $0.027$), mientras que en validación lo era Portugal: la mejora por liga no se repite y es mejor describirla como pequeña y repartida. Con $\tau=0.02$ fijado a priori, el \textit{backtest} da $-2.6\%$ con Pinnacle ($[-17.9\%,+11.4\%]$, 482 apuestas) y $+11.4\%$ con Bet365 ($[-4.1\%,+29.0\%]$, 606 apuestas): el intervalo incluye pérdidas y no se puede afirmar rentabilidad (Fig.~\ref{fig:test_bt}).
 
 \begin{table}[H]
 \caption{Test holdout (2024/25--2025/26, $n=5{,}999$): modelos entrenados solo con train/val. $\Delta$: \textit{log loss} del modelo final frente a cada referencia y al \textit{baseline}, IC 95\% por bloques.}
@@ -405,11 +405,26 @@ Pinnacle cruda (con respaldo) & 0.9660 & 0.1933 & 0.684 & 0.0200 \\
 \textit{Baseline}: LR (3 variables) & 0.9652 & 0.1931 & 0.683 & 0.0156 \\
 \midrule
 \textbf{Modelo final} & \textbf{0.9651} & \textbf{0.1930} & 0.683 & 0.0168 \\
-\multicolumn{5}{@{}l}{\scriptsize $\Delta$ vs. mercado $-0.0016$ $[-0.0026,-0.0005]$; vs. Pinnacle $-0.0009$ $[-0.0018,-0.0000]$; vs. LR $-0.0001$ $[-0.0005,+0.0003]$} \\
+\multicolumn{5}{@{}l}{\scriptsize $\Delta$ vs. mercado $-0.0016$ $[-0.0027,-0.0006]$; vs. Pinnacle $-0.0009$ $[-0.0018,-0.0001]$; vs. LR $-0.0001$ $[-0.0005,+0.0003]$} \\
 \bottomrule
 \end{tabular}%
 }
 \label{tab:test}
+\end{table}
+
+\begin{table}[H]
+\caption{Test holdout separado por el origen del precio de referencia. $\Delta$ de \textit{log loss} del modelo final (negativo = mejor), IC 95\% por bloques.}
+\centering
+\footnotesize
+\begin{tabular}{lrcc}
+\toprule
+\textbf{Precio} & $n$ & $\Delta$ vs. mercado crudo & $\Delta$ vs. Pinnacle cruda \\
+\midrule
+Pinnacle observada & 4{,}440 & $-0.0020$ $[-0.0034,-0.0007]$ & $-0.0011$ $[-0.0022,+0.0000]$ \\
+Respaldo (consenso) & 1{,}559 & $-0.0004$ $[-0.0013,+0.0007]$ & $-0.0004$ $[-0.0014,+0.0006]$ \\
+\bottomrule
+\end{tabular}
+\label{tab:test_cob}
 \end{table}
 
 \begin{figure}[H]
@@ -427,21 +442,21 @@ Pinnacle cruda (con respaldo) & 0.9660 & 0.1933 & 0.684 & 0.0200 \\
 \begin{figure}[H]
 \centering
 \includegraphics[width=1.0\columnwidth]{p_test_backtest.png}
-\caption{ROI por unidad apostada en el test holdout con cuotas de apertura de Bet365 (arriba) y Pinnacle (abajo); $\tau$ elegido en validación, IC por bloques. Con Pinnacle solo se cubren los 4{,}440 partidos con precio observado.}
+\caption{ROI por unidad apostada en el test holdout con cuotas de apertura de Bet365 (arriba) y Pinnacle (abajo); $\tau=0.02$ fijo a priori, IC por bloques. Con Pinnacle solo se cubren los 4{,}440 partidos con precio observado.}
 \label{fig:test_bt}
 \end{figure}
 
 
 \subsection{El mercado como referencia}
-\textbf{Sin cuotas.} Un modelo de fundamentos acierta el ganador en el 70.4\% de los partidos sin empate frente al 71.6\% del modelo con cuotas; cuando discrepan (9.4\%), acierta el modelo con cuotas el 56.6\% (McNemar $p<0.0001$). Lo que las cuotas no explican no es predecible con estas variables: el $R^2$ fuera de muestra del residuo es $-0.0006$ y positivo en 2 de 6 \textit{folds}. Las 33 habilidades individuales reducen el RMSE de $GD$ de 1.856 a 1.683, pero empeoran el \textit{log loss} al añadirse al precio.
+\textbf{Sin cuotas.} Un modelo de fundamentos acierta el ganador en el 70.4\% de los partidos sin empate frente al 71.6\% del modelo con cuotas; cuando discrepan (9.6\%), acierta el modelo con cuotas el 56.1\% (McNemar $p<0.0001$). Lo que las cuotas no explican no es predecible con estas variables: el $R^2$ fuera de muestra del residuo es $-0.0006$ y positivo en 2 de 6 \textit{folds}. Las 33 habilidades individuales reducen el RMSE de $GD$ de 1.856 a 1.683, pero empeoran el \textit{log loss} al añadirse al precio.
 
-\textbf{Apertura y cierre.} El cierre subsume a la apertura (\textit{log loss} de Pinnacle 0.9658 $\to$ 0.9620; el coeficiente de la apertura es $\approx0$ y el del cierre $\approx1$ en el \textit{encompassing}), y el modelo sin cuotas no anticipa el movimiento (correlación $-0.027$, ligeramente negativa: el cierre tiende a corregir sus discrepancias; CLV $-0.17$ pp, frente a $-0.02$ pp del lado contrario).
+\textbf{Apertura y cierre.} El cierre subsume a la apertura (\textit{log loss} de Pinnacle 0.9658 $\to$ 0.9620; el coeficiente de la apertura es $\approx0$ y el del cierre $\approx1$ en el \textit{encompassing}), y el modelo sin cuotas no anticipa el movimiento (correlación $-0.030$, ligeramente negativa: el cierre tiende a corregir sus discrepancias; CLV $-0.18$ pp, frente a $-0.01$ pp del lado contrario).
 
 \textbf{Pruebas independientes.} La Tabla~\ref{tab:mercado} resume las cuatro pruebas de eficiencia: ninguna encuentra información que el mercado no tenga.
 
 \textbf{Calibración del mercado.} Los favoritos ganan entre 2 y 4 pp más de lo que implica el precio y los \textit{longshots} menos (Fig.~\ref{fig:sesgo}); con la normalización por potencia del margen la pendiente baja de $1.09$--$1.24$ a $1.01$--$1.08$, así que parte del sesgo es consecuencia del método con que se elimina el margen.
 
-\textbf{\textit{Backtest}.} Con cuotas de apertura (Fig.~\ref{fig:backtest}), el modelo sin cuotas pierde entre $-8.4\%$ y $-13.8\%$ por unidad apostada mientras promete entre $+16\%$ y $+31\%$ (``maldición del ganador'': las apuestas que elige son justo aquellas donde su error es mayor); la regla $|\hat y|>2$ de Stübinger et al. da $-3.1\%$ ($[-6.4\%, +0.1\%]$) en 718 apuestas, de modo que no reproduce el $+1.6\%$ del artículo; y el modelo final obtiene $-1.5\%$ en Pinnacle ($[-7.3\%, +4.4\%]$) en la ventana 2022/23--2023/24. El $+3.0\%$ con Bet365 se apoya en 131 apuestas con IC de $\pm46$ puntos y no es evidencia de rentabilidad; en el test holdout el resultado es análogo (Sección~\ref{sec:test}).
+\textbf{\textit{Backtest}.} Con cuotas de apertura (Fig.~\ref{fig:backtest}), el modelo sin cuotas pierde entre $-7.7\%$ y $-12.5\%$ por unidad apostada mientras promete entre $+15\%$ y $+31\%$ (``maldición del ganador'': las apuestas que elige son justo aquellas donde su error es mayor); la regla $|\hat y|>2$ de Stübinger et al. da $-2.9\%$ ($[-6.3\%, +0.1\%]$) en 706 apuestas, de modo que no reproduce el $+1.6\%$ del artículo; y el modelo final, con $\tau=0.02$ fijo, obtiene $-6.2\%$ en Pinnacle ($[-15.9\%, +4.2\%]$, 1{,}280 apuestas) en la ventana 2022/23--2023/24. El $+13.8\%$ con Bet365 (654 apuestas, $[-4.3\%,+30.8\%]$) incluye pérdidas y no es evidencia de rentabilidad; en el test holdout el resultado es análogo (Sección~\ref{sec:test}).
 
 \begin{figure}[H]
 \centering
@@ -468,7 +483,7 @@ Pinnacle cruda (con respaldo) & 0.9660 & 0.1933 & 0.684 & 0.0200 \\
 \begin{figure}[H]
 \centering
 \includegraphics[width=1.0\columnwidth]{p_backtest_b365.png}
-\caption{ROI por unidad apostada con cuotas de apertura de Bet365 (2022/23--2023/24, validación, IC por bloques). El modelo final tiene solo 131 apuestas y un IC de $\pm46$ puntos.}
+\caption{ROI por unidad apostada con cuotas de apertura de Bet365 (2022/23--2023/24, validación, IC por bloques). Con $\tau=0.02$ fijo, el modelo final tiene 654 apuestas y un IC de $[-4.3\%,+30.8\%]$.}
 \label{fig:backtest}
 \end{figure}
 \begin{figure}[H]
@@ -482,7 +497,7 @@ Pinnacle cruda (con respaldo) & 0.9660 & 0.1933 & 0.684 & 0.0200 \\
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.95\columnwidth]{p_mipca.png}
-\caption{MI frente a PCA (pregunta P3): \textit{log loss} medio por conjunto y modelo con la $k$ elegida en la ventana de ajuste. Con cuotas gana MI y en ningún caso reducir supera a usar todas las variables.}
+\caption{MI frente a PCA (pregunta P3): \textit{log loss} medio por conjunto y modelo con la $k$ elegida en la ventana de ajuste. Con cuotas gana MI; reducir casi nunca supera a usar todas las variables (la excepción es el MLP con MI-5, 0.0024).}
 \label{fig:mipca}
 \end{figure}
 
@@ -526,11 +541,11 @@ La matriz de confusión (Fig.~\ref{fig:conf}) muestra dónde se equivoca el mode
 \midrule
 Modelo de residuo ($GD-\hat y_M$) & $R^2=-0.0006$; positivo en 2/6 \textit{folds} \\
 Apertura frente a cierre & \textit{log loss} 0.9658 $\to$ 0.9620; coef. apertura $\approx0$, cierre $\approx1$ \\
-Movimiento del mercado & correlación con la discrepancia del modelo: $-0.027$ (el cierre la corrige) \\
-CLV & $-0.17$ pp (lado contrario: $-0.02$ pp) \\
-\textit{Backtest} sin cuotas & ROI $-8.4\%$ a $-13.8\%$; promete $+16\%$ a $+31\%$ \\
-Regla $|\hat y|>2$ & 718 apuestas, ROI $-3.1\%$ ($[-6.4\%,+0.1\%]$) \\
-Modelo final (Pinnacle) & ROI $-1.5\%$ ($[-7.3\%,+4.4\%]$) en validación; $-2.2\%$ ($[-9.3\%,+4.9\%]$) en test \\
+Movimiento del mercado & correlación con la discrepancia del modelo: $-0.030$ (el cierre la corrige) \\
+CLV & $-0.18$ pp (lado contrario: $-0.01$ pp) \\
+\textit{Backtest} sin cuotas & ROI $-7.7\%$ a $-12.5\%$; promete $+15\%$ a $+31\%$ \\
+Regla $|\hat y|>2$ & 706 apuestas, ROI $-2.9\%$ ($[-6.3\%,+0.1\%]$) \\
+Modelo final (Pinnacle) & ROI $-6.2\%$ ($[-15.9\%,+4.2\%]$) en validación; $-2.6\%$ ($[-17.9\%,+11.4\%]$) en test ($\tau=0.02$ fijo) \\
 \bottomrule
 \end{tabularx}
 \label{tab:mercado}
@@ -557,11 +572,11 @@ Con cuotas, el precio domina: barajarlo sube el \textit{log loss} en 0.153 y nin
 
 \subsection{Preguntas de investigación}
 \begin{itemize}\setlength{\itemsep}{1pt}\setlength{\parsep}{0pt}\setlength{\topsep}{2pt}
-\item \textbf{P1}: no hay \textit{concept drift}: el \textit{log loss} del mercado no tiene tendencia (pendiente $p=0.39$), la ventaja del modelo final sobre el mercado se mantiene en 5 de 6 temporadas de validación y en las dos del test, y entrenar solo con las últimas tres no mejora.
+\item \textbf{P1}: no hay \textit{concept drift} en el \textit{log loss}: el del mercado no tiene tendencia (pendiente $p=0.39$), la ventaja del modelo final sobre el mercado se mantiene en 5 de 6 temporadas de validación y en las dos del test, y entrenar solo con las últimas tres no mejora. Lo que sí cambia con el tiempo es la composición de las casas que forman el consenso (William Hill desaparece en 2025/26 y Pinnacle cubre el 48\%), y con ella el margen medio (PSI 0.6--1.5); por eso el modelo final no usa el margen y es el precio de Pinnacle, no el consenso, el que se toma como referencia principal.
 \item \textbf{P2}: sí sin cuotas (Fig.~\ref{fig:bloques}), no con cuotas.
-\item \textbf{P3}: con cuotas gana MI ($\Delta=-0.014$, 6/6 \textit{folds}), porque conserva la variable dominante que PCA diluye; sin cuotas PCA $\ge$ MI ($+0.004$ a $+0.005$); en ambos casos reducir casi no mejora a usar todas las variables (la mejor reducción gana 0.0014).
+\item \textbf{P3}: con cuotas gana MI ($\Delta=-0.014$ a $-0.016$, 6/6 \textit{folds}), porque conserva la variable dominante que PCA diluye; sin cuotas PCA $\ge$ MI ($+0.004$ a $+0.005$); en ambos casos reducir casi no mejora a usar todas las variables (la mejor reducción, MI-5 con el MLP y cuotas, gana 0.0024).
 \item \textbf{P4}: no hay \textit{value bets} rentables demostrables.
-\item Hipótesis: (i) confirmada; (ii) parcial: la plantilla pesa más al inicio solo sin cuotas, pero no es complementaria al precio; (iii) no en esa forma: el modelo perdedor está bien calibrado en promedio y acierta menos, el problema es su calibración condicional donde discrepa del mercado.
+\item Hipótesis: (i) confirmada; (ii) parcial: la plantilla pesa más al inicio solo sin cuotas, pero no es complementaria al precio; (iii) no en esa forma: el modelo sin cuotas está bien calibrado en promedio, pero no en los partidos donde discrepa del mercado, que son justo los que elige para apostar; por eso promete entre $+15\%$ y $+31\%$ por apuesta y obtiene pérdidas (``maldición del ganador''). El problema no es la calibración global sino la condicional.
 \end{itemize}
 
 \section{Discusión y limitaciones}
@@ -576,9 +591,10 @@ Con cuotas, el precio domina: barajarlo sube el \textit{log loss} en 0.153 y nin
 \item Pinnacle cubre solo el 48\% de 2025/26 (temporada del test), así que esa temporada se parece más al consenso.
 \item Solo hay partidos de liga: el descanso y la congestión no ven copas ni competiciones europeas.
 \item La mejora por liga no se repite entre validación (Portugal) y test (Turquía): con nueve ligas y unos 600--760 partidos por liga en el test no es una conclusión firme.
-\item Los hiperparámetros del modelo de regresión sin cuotas (RF y HGB) se eligieron antes de adoptar el bloque Elo/EWMA y se mantuvieron; son conservadores y el RF casi no depende de ellos.
 \item El test holdout son solo dos temporadas (5{,}999 partidos): sus intervalos son amplios, y el modelo desplegado se entrenó sin esos datos; si se reentrenara con ellos, esa versión ya no tendría evaluación independiente.
 \item Las diferencias entre modelos son pequeñas (0.001--0.004) frente a la variación entre temporadas ($\pm0.013$), por lo que se interpretan con intervalos y no con valores puntuales.
+\item Sesgo de selección: variables, reglas de aceptación y modelo final se eligieron mirando las mismas seis temporadas de validación con las que se reportan sus $p$, y la corrección de Benjamini--Hochberg es por familia, no global. La ventaja del modelo final sobre Pinnacle cruda y sobre el \textit{baseline} (0.0004--0.0009) está dentro del ruido de esa selección.
+\item El test mezcla dos regímenes de precio (Pinnacle observada en 2024/25 y la mitad de 2025/26; respaldo de consenso en el resto), así que no mide por separado el modelo sobre el precio sharp y sobre el consenso; la Sección~\ref{sec:test} los separa.
 \item La generalización a otras ligas, deportes u otro periodo no está probada.
 \end{itemize}
 
@@ -587,7 +603,7 @@ Con cuotas, el precio domina: barajarlo sube el \textit{log loss} en 0.153 y nin
 \section{Conclusiones}
 \label{sec:conclusiones}
 \begin{enumerate}
-    \item \textbf{El mercado es eficiente respecto a los fundamentos disponibles.} El mejor modelo es una regresión logística de dos variables sobre la apertura de Pinnacle (\textit{log loss} 0.9653 en validación y 0.9651 en el test holdout; $-0.0011$ y $-0.0016$ frente al mercado, \textit{p} ajustado $0.004$ y $0.012$), con el mismo AUC: refina el precio, no aporta información nueva.
+    \item \textbf{El mercado es eficiente respecto a los fundamentos disponibles.} El mejor modelo es una regresión logística de dos variables sobre la apertura de Pinnacle (\textit{log loss} 0.9653 en validación y 0.9651 en el test holdout). Su ventaja es sobre el consenso de cuatro casas ($-0.0011$ y $-0.0016$, \textit{p} ajustado $0.004$ en ambos); frente a Pinnacle cruda es de $-0.0009$ en test, en el límite de la significación, y frente al \textit{baseline} de tres variables no existe ($-0.0001$). Con el mismo AUC que el mercado, el modelo recalibra el precio de Pinnacle: no aporta información nueva ni un modelo ganador claro.
     \item Ni la plantilla (ni siquiera la del once titular normalizada por liga), ni la forma, ni Elo, ni los goles esperados, ni las 33 habilidades, ni modelos más complejos mejoran al precio; los tiros a puerta aportan solo sin cuotas.
     \item Sin cuotas se predice casi tan bien (70.4\% frente a 71.6\% de acierto del ganador), pero no mejor, y el cierre subsume a la apertura.
     \item El \textit{backtest} no arroja un retorno significativamente positivo y la calibración del mercado depende del método de normalización del margen.

@@ -48,3 +48,6 @@ los mensajes del script; es seguro re-ejecutar.)
   ratings de EA/FC en el cruce de `process_data.py`.
 - El mapeo de clubes (EA → football-data) se hace en `process_data.py` (paso 5: overrides + `rapidfuzz`).
   Cobertura de squad quality: 100%.
+## Huellas de los datos
+
+`manifest.py` calcula el SHA-256 de cada CSV crudo y lo guarda en `data_manifest.json` (versionado). `python scripts/download/manifest.py --check` compara los datos locales con ese manifiesto: si una descarga nueva difiere (por ejemplo, football-data.co.uk actualizó 2025/26), lo avisa.
