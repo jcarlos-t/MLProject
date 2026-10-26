@@ -25,3 +25,5 @@ Thumbs.db
 .kaggle/
 
 Books-Papers/
+# Contexto local para Claude Code
+CLAUDE.md

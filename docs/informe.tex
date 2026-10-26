@@ -36,7 +36,7 @@ jose.alva.e@utec.edu.pe}
 Lima, Perú \\
 juan.ticlia@utec.edu.pe}
 \and
-\IEEEauthorblockN{Elmer José Manuel Villegaz Suárez}
+\IEEEauthorblockN{Elmer José Manuel Villegas Suárez}
 \IEEEauthorblockA{\textit{Departamento de computación} \\
 \textit{Universidad de Ingeniería y Tecnología} \\
 Lima, Perú \\
@@ -222,7 +222,7 @@ cuotas + todo lo nuevo & $+0.0004$ & $[-0.0004, +0.0011]$ \\
 
 Hay tres puntos de comparación. Dos son \textbf{referencias sin aprendizaje}: el \textbf{\textit{prior}} (frecuencias de $H/D/A$ del entrenamiento) y el \textbf{mercado crudo} (probabilidades implícitas del consenso, Ec.~\ref{eq:oddsprob}). El tercero es el \textbf{\textit{baseline}}: una \textbf{regresión logística (LR) sobre las tres variables de mercado} (logit local/visitante, probabilidad de empate y margen), el modelo más simple con aprendizaje. Un modelo aporta valor solo si mejora al \textit{prior}, al \textit{baseline} y, sobre todo, al mercado.
 
-Los modelos de clasificación son: LR (estandarizada, regularización $\ell_2$); \textbf{HGB} (\textit{gradient boosting} con histogramas, tolera nulos) y \textbf{XGBoost}, que reciben F2; \textbf{SVM} con núcleo RBF (entrenado con las 9{,}000 filas más recientes por su coste) y \textbf{MLP} (una capa oculta), que reciben F1; y un \textit{ensemble} que promedia sus probabilidades. Para la regresión de $GD$ se usan regresión lineal, Random Forest y HGB, promediados como en \cite{stubinger2020} y convertidos en probabilidades 1X2 con una regresión logística. Se añaden dos selecciones de variables, MI (las $k$ de mayor información mutua) frente a PCA, calculadas solo con el entrenamiento de cada partición. Se consideran dos escenarios: \textbf{con cuotas}, donde el precio domina, y \textbf{sin cuotas}, el modelo de fundamentos que se compara con el mercado; este usa la mejor combinación de la Sección~\ref{sec:preproc} (plantilla normalizada, Elo, medias exponenciales) más las 33 habilidades.
+Los modelos de clasificación son: LR (estandarizada, regularización $\ell_2$ \cite{james2023}); \textbf{HGB} (\textit{gradient boosting} con histogramas, tolera nulos) y \textbf{XGBoost}, que reciben F2; \textbf{SVM} con núcleo RBF (entrenado con las 9{,}000 filas más recientes por su coste) y \textbf{MLP} (una capa oculta), que reciben F1; y un \textit{ensemble} que promedia sus probabilidades. Para la regresión de $GD$ se usan regresión lineal, Random Forest y HGB, promediados como en \cite{stubinger2020} y convertidos en probabilidades 1X2 con una regresión logística. Se añaden dos selecciones de variables, MI (las $k$ de mayor información mutua) frente a PCA, calculadas solo con el entrenamiento de cada partición. Se consideran dos escenarios: \textbf{con cuotas}, donde el precio domina, y \textbf{sin cuotas}, el modelo de fundamentos que se compara con el mercado; este usa la mejor combinación de la Sección~\ref{sec:preproc} (plantilla normalizada, Elo, medias exponenciales) más las 33 habilidades.
 
 \textbf{Modelo final.} Con $x_1=\ln(p_H/p_A)$ y $x_2=p_D$ de la apertura de Pinnacle, la LR multinomial estima $P(c\mid x)=\exp(w_c^\top x+b_c)/\sum_{k}\exp(w_k^\top x+b_k)$ con penalización $\ell_2$ de fuerza $1/C$, $C=0.01$. Son nueve parámetros, de modo que no puede sobreajustar y su única función es reescalar el precio: dar más o menos confianza al mercado y ajustar la probabilidad de empate. Se eligió porque el \textit{log loss} es una regla de puntuación propia y porque las pruebas con rejillas amplias indicaron que la relación es casi lineal. Los modelos más flexibles sirven de contraste: si existiera una relación no lineal entre precio y resultado, HGB, XGBoost o el MLP la habrían encontrado.
 
@@ -231,7 +231,7 @@ Los modelos de clasificación son: LR (estandarizada, regularización $\ell_2$);
 
 \textbf{Partición.} Las 36{,}119 filas modelables se dividen por temporada. \textbf{Train/val}: 30{,}120 partidos de 2014/15 a 2023/24. \textbf{Test}: los 5{,}999 de 2024/25 y 2025/26, que no se usan para entrenar, validar ni elegir variables, hiperparámetros ni umbrales, y se evalúan una sola vez con el modelo ya entrenado (Sección~\ref{sec:test}).
 
-\textbf{Validación temporal.} Para cada una de las seis temporadas de validación (2018/19--2023/24; 18{,}184 predicciones) se entrena con todas las anteriores y se predice la siguiente. Un K-fold aleatorio y \textit{leave-one-season-out} dan un \textit{log loss} entre 0.0001 y 0.0014 menor (más optimista, porque ven el futuro), con el mismo orden de modelos.
+\textbf{Validación temporal.} Para cada una de las seis temporadas de validación (2018/19--2023/24; 18{,}184 predicciones) se entrena con todas las anteriores y se predice la siguiente. Un K-fold aleatorio y \textit{leave-one-season-out} \cite{james2023} dan un \textit{log loss} entre 0.0001 y 0.0014 menor (más optimista, porque ven el futuro), con el mismo orden de modelos.
 
 \textbf{Hiperparámetros.} Los modelos base (LR, HGB, XGBoost, SVM, MLP) se ajustan una sola vez con una rejilla corta en la ventana 2016/17--2017/18, disjunta de la evaluación, con criterio de menor \textit{log loss} y desempate por la configuración más simple (Tabla~\ref{tab:hiper}). El $C$ del modelo final se elige aparte con las dos últimas temporadas de train/val, porque es el único modelo que se despliega; por eso el \textit{baseline} usa $C=0.05$ y el modelo final $C=0.01$. Repetir la elección dentro de cada partición reproduce el \textit{log loss} con diferencia $\le0.0001$, y las rejillas más amplias mostraron que el óptimo de los árboles tiene profundidad 1 y el del SVM tiende a $\gamma\to0$: la relación entre precio y resultado es aditiva y casi lineal.
 
@@ -253,7 +253,7 @@ MLP & capa $(16)$, $\alpha=1$, 100 iteraciones \\
 \label{tab:hiper}
 \end{table}
 
-\textbf{Inferencia.} Las comparaciones son pareadas por partido, con \textit{bootstrap} por bloques (temporada--semana) y corrección de Benjamini--Hochberg \cite{benjamini1995} dentro de cada familia de comparaciones. Como esa corrección no cubre todo lo probado durante el desarrollo, los $p$ de validación deben leerse como descriptivos; el test es la única comparación sin selección previa. La calibración se mide con diagramas de fiabilidad (intervalos de Wilson) y con el ECE.
+\textbf{Inferencia.} Las comparaciones son pareadas por partido, con \textit{bootstrap} por bloques (temporada--semana) \cite{james2023} y corrección de Benjamini--Hochberg \cite{benjamini1995} dentro de cada familia de comparaciones. Como esa corrección no cubre todo lo probado durante el desarrollo, los $p$ de validación deben leerse como descriptivos; el test es la única comparación sin selección previa. La calibración se mide con diagramas de fiabilidad (intervalos de Wilson) y con el ECE.
 
 \textbf{Eficiencia del mercado.} Se aplican cuatro pruebas: un modelo del residuo $GD-\hat y_{M}$; la relación entre la discrepancia del modelo y el movimiento apertura$\to$cierre de Pinnacle; el valor frente a la línea de cierre (CLV); y un \textit{backtest} de una unidad por apuesta con cuotas de apertura de Bet365 y Pinnacle, con $\tau=0.02$ fijado a priori (elegirlo por el ROI de validación resultó inestable).
 
@@ -475,7 +475,7 @@ Con cuotas, el precio domina: barajarlo sube el \textit{log loss} en 0.153 y nin
 \item La generalización a otras ligas, deportes u otro periodo no está probada.
 \end{itemize}
 
-\textbf{Consideraciones éticas.} Las apuestas pueden causar daño (adicción, pérdidas); este trabajo no es consejo financiero y su resultado apunta justamente a que no hay ventaja rentable demostrable, lo que desaconseja usarlo para apostar. Los datos son públicos (cuotas y ratings profesionales de jugadores, sin datos personales sensibles) y se obtienen respetando sus licencias; no se redistribuyen los datos crudos. No se midió ningún sesgo hacia personas, pero sí un sesgo de cobertura: las ligas con menos historia y las temporadas recientes tienen datos más incompletos.
+\textbf{Consideraciones éticas.} Las apuestas pueden causar daño (adicción, pérdidas); este trabajo no es consejo financiero y su resultado apunta justamente a que no hay ventaja rentable demostrable, lo que desaconseja usarlo para apostar. Los datos son públicos (cuotas y ratings profesionales de jugadores, sin datos personales sensibles) y se usan solo con fines académicos y no comerciales, como exige football-data.co.uk; no se redistribuyen los datos crudos. No se midió ningún sesgo hacia personas, pero sí un sesgo de cobertura: las ligas con menos historia y las temporadas recientes tienen datos más incompletos.
 
 \section{Conclusiones}
 \label{sec:conclusiones}
@@ -489,17 +489,17 @@ Con cuotas, el precio domina: barajarlo sube el \textit{log loss} en 0.153 y nin
 \textbf{Trabajo futuro.} (a) Alineaciones reales y lesiones previas al partido, la información que el mercado incorpora entre apertura y cierre; (b) xG de partidos pasados para las ligas que lo publican, que probablemente ayude sin cuotas pero no con el precio; (c) comparación con modelos de conteo de Poisson \cite{dixon1997,karlis2003}; (d) versiones de habilidades con varias fechas por temporada.
 
 \begin{thebibliography}{10}
-\bibitem{tammouch2024} I. Tammouch, A. Elouafi, and I. Essadik, ``Betting on Machine Learning: Extracting Patterns from Football's Anarchic Odds,'' 2024.
-\bibitem{stubinger2020} J. Stübinger, B. Mangold, and J. Knoll, ``Machine Learning in Football Betting: Prediction of Match Results Based on Player Characteristics,'' \textit{Applied Sciences}, vol. 10, no. 1, art. 46, 2020.
+\bibitem{tammouch2024} I. Tammouch, A. Elouafi, and I. Essadik, ``Betting on Machine Learning: Extracting Patterns from Football's Anarchic Odds,'' in \textit{Proc. 7th Int. Conf. Advanced Communication Technologies and Networking (CommNet)}, 2024, doi: 10.1109/CommNet63022.2024.10793344.
+\bibitem{stubinger2020} J. Stübinger, B. Mangold, and J. Knoll, ``Machine Learning in Football Betting: Prediction of Match Results Based on Player Characteristics,'' \textit{Applied Sciences}, vol. 10, no. 1, art. 46, 2020, doi: 10.3390/app10010046.
 \bibitem{dixon1997} M. J. Dixon and S. G. Coles, ``Modelling Association Football Scores and Inefficiencies in the Football Betting Market,'' \textit{Journal of the Royal Statistical Society: Series C (Applied Statistics)}, vol. 46, no. 2, pp. 265--280, 1997.
-\bibitem{karlis2003} D. Karlis and I. Ntzoufras, ``Analysis of sports data using bivariate Poisson models,'' \textit{The Statistician}, vol. 52, no. 3, pp. 381--393, 2003.
+\bibitem{karlis2003} D. Karlis and I. Ntzoufras, ``Analysis of sports data by using bivariate Poisson models,'' \textit{Journal of the Royal Statistical Society: Series D (The Statistician)}, vol. 52, no. 3, pp. 381--393, 2003.
 \bibitem{epstein1969} E. S. Epstein, ``A scoring system for probability forecasts of ranked categories,'' \textit{Journal of Applied Meteorology}, vol. 8, no. 6, pp. 985--987, 1969.
 \bibitem{zheng2018} A. Zheng and A. Casari, \textit{Feature Engineering for Machine Learning}. O'Reilly Media, 2018.
 \bibitem{james2023} G. James, D. Witten, T. Hastie, R. Tibshirani, and J. Taylor, \textit{An Introduction to Statistical Learning with Applications in Python}. Springer, 2023.
 \bibitem{siddiqi2017} N. Siddiqi, \textit{Intelligent Credit Scoring: Building and Implementing Better Credit Risk Scorecards}, 2nd ed. Wiley, 2017.
 \bibitem{benjamini1995} Y. Benjamini and Y. Hochberg, ``Controlling the false discovery rate: a practical and powerful approach to multiple testing,'' \textit{Journal of the Royal Statistical Society: Series B}, vol. 57, no. 1, pp. 289--300, 1995.
-\bibitem{footballdata} football-data.co.uk, ``Football Data Historical Results and Betting Odds,'' \url{https://football-data.co.uk/data.php}, 2025.
-\bibitem{kagglefifa} Kaggle, ``FIFA / EA Sports FC Player Ratings Datasets (sofifa),'' \url{https://www.kaggle.com/datasets/}, 2025.
+\bibitem{footballdata} football-data.co.uk, ``Football Results, Statistics \& Soccer Betting Odds Data,'' \url{https://football-data.co.uk/data.php}, 2025.
+\bibitem{kagglefifa} Kaggle, conjuntos de ratings de jugadores: ``FIFA Players Dataset'' (luisfucros, FIFA 15--22), \url{https://www.kaggle.com/datasets/luisfucros/fifa-players}; ``EA Sports FC 24 complete player dataset'' (stefanoleone992, FC 23--24), \url{https://www.kaggle.com/datasets/stefanoleone992/ea-sports-fc-24-complete-player-dataset}; ``EA Sports FC 25 + Real Player Data (SoFIFA Merge)'' (sametozturkk), \url{https://www.kaggle.com/datasets/sametozturkk/ea-sports-fc-25-real-player-data-sofifa-merge}; ``FC 26 (FIFA 26) Player Data'' (rovnez), \url{https://www.kaggle.com/datasets/rovnez/fc-26-fifa-26-player-data}.
 \end{thebibliography}
 
 \end{document}

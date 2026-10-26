@@ -8,10 +8,10 @@ Proyecto del curso de Machine Learning (UTEC), segunda etapa (modelado, evaluaci
 
 - José Luis Alva Espinoza
 - Juan Carlos Ticlia Maqui
-- Elmer José Manuel Villegaz Suárez
+- Elmer José Manuel Villegas Suárez
 - Joseph Anderson Cose Rojas
 
-**Informe:** `docs/informe.pdf` (formato IEEE, fuente en `docs/informe.tex`). **Presentación:** `docs/presentacion/presentacion.pdf` (fuente HTML en `docs/presentacion/presentacion.html`, se navega con las flechas). **Cuadernos:** `scripts/notebooks/`, que se leen y ejecutan en orden 01 a 08 (ver `scripts/notebooks/README.md`). **Modelo final:** `scripts/data/modelo_final.json` (se genera con `08_modelo_final.ipynb`).
+**Informe:** `docs/informe.pdf` (formato IEEE, fuente en `docs/informe.tex`). **Presentación:** `docs/presentacion/presentacion.pdf` (13 diapositivas, 10 minutos; fuente HTML en `docs/presentacion/presentacion.html`, se navega con las flechas; alineada con las cifras del informe, incluido el test holdout). **Cuadernos:** `scripts/notebooks/`, que se leen y ejecutan en orden 01 a 08 (ver `scripts/notebooks/README.md`). **Modelo final:** `scripts/data/modelo_final.json` (se genera con `08_modelo_final.ipynb`).
 
 ---
 
@@ -151,6 +151,7 @@ ML_Project/
 ├── docs/
 │   ├── informe.tex            # paper del proyecto (IEEEtran) y informe.pdf compilado
 │   ├── Data_Dictionary.md     # diccionario de datos (todas las columnas)
+│   ├── presentacion/          # presentacion.html (fuente), presentacion.pdf (entregable) e img/ con las figuras usadas
 │   └── figures/               # figuras del informe (eda_*, prep_*, res_*, hp_*, mercado_*, final_*; las p_* son recortes de un solo panel para el informe)
 ├── scripts/
 │   ├── download/
@@ -171,7 +172,7 @@ ML_Project/
 │   │   ├── 07_evaluacion.ipynb        # CV (temporal vs K-fold vs LOSO), ROC/AUC, ECE/MCE, recalibración, bootstrap por bloques + BH
 │   │   └── 08_modelo_final.ipynb      # modelo final: selección, evaluación completa, backtest, guardado y uso
 │   └── data/                  # generado por los scripts (gitignored)
-│       ├── matches.csv        # 36,150 partidos (consolidado crudo)
+│       ├── matches.csv        # 36,150 partidos (consolidado crudo; 36,119 modelables tras excluir 31 sin cuotas)
 │       ├── matches_sq.csv     # base unificada: 225 cols, 36 de squad
 │       ├── matches_clean.csv  # dataset limpio, sin nulos (lo genera 01_eda.ipynb)
 │       ├── dataset_final.csv  # 33 features + target + metadatos (lo genera 02_feature.ipynb)

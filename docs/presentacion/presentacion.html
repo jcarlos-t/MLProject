@@ -81,9 +81,9 @@ li b{color:#020617} .mut{color:var(--mut)}
     <div class="kicker">Machine Learning · UTEC · Proyecto final, etapa 2</div>
     <h1>¿Puede un modelo<br>ganarle al <span style="color:var(--acc)">mercado</span><br>de apuestas de fútbol?</h1>
     <p class="sub" style="margin-top:26px;max-width:880px">Predicción probabilística del resultado 1X2 en nueve ligas europeas (2014/15–2025/26): modelos, evaluación honesta y un resultado negativo bien medido.</p>
-    <div style="margin-top:34px"><span class="chip">36,150 partidos</span><span class="chip">9 ligas</span><span class="chip">12 temporadas</span><span class="chip">test holdout 2024–26</span></div>
+    <div style="margin-top:34px"><span class="chip">36,150 partidos (36,119 modelables)</span><span class="chip">9 ligas</span><span class="chip">12 temporadas</span><span class="chip">test holdout 2024–26</span></div>
   </div>
-  <div class="foot"><span>José Luis Alva Espinoza · Juan Carlos Ticlia Maqui · Elmer José Manuel Villegaz Suárez · Joseph Anderson Cose Rojas</span><span>1</span></div>
+  <div class="foot"><span>José Luis Alva Espinoza · Juan Carlos Ticlia Maqui · Elmer José Manuel Villegas Suárez · Joseph Anderson Cose Rojas</span><span>1</span></div>
 </section>
 
 <!-- 2. Problema -->
@@ -123,7 +123,7 @@ li b{color:#020617} .mut{color:var(--mut)}
     </div>
     <div class="col fig step" style="flex:1.5"><img src="img/eda_cuotas_vs_ftr.png" alt=""><div class="cap">Cuotas de apertura según el resultado real</div></div>
   </div>
-  <div class="foot"><span>Fuentes públicas · 296 equipos · 2013/14 solo como calentamiento</span><span>3</span></div>
+  <div class="foot"><span>Fuentes públicas (football-data.co.uk y Kaggle) · 31 partidos sin cuotas excluidos · 296 equipos · 2013/14 solo como calentamiento</span><span>3</span></div>
 </section>
 
 <!-- 4. Metodología -->
@@ -183,7 +183,7 @@ li b{color:#020617} .mut{color:var(--mut)}
     <div class="col" style="flex:1.2">
       <div class="bars" id="bars">
         <div class="bar bad"><span>Frecuencia base (ref.)</span><div class="t"><i data-v="1.0720"></i></div><span class="n">1.0720</span></div>
-        <div class="bar"><span>SVM (corregido)</span><div class="t"><i data-v="0.9940"></i></div><span class="n">0.9940</span></div>
+        <div class="bar"><span>SVM</span><div class="t"><i data-v="0.9940"></i></div><span class="n">0.9940</span></div>
         <div class="bar"><span>XGBoost</span><div class="t"><i data-v="0.9697"></i></div><span class="n">0.9697</span></div>
         <div class="bar"><span>Ensemble</span><div class="t"><i data-v="0.9686"></i></div><span class="n">0.9686</span></div>
         <div class="bar"><span>HGB</span><div class="t"><i data-v="0.9680"></i></div><span class="n">0.9680</span></div>
@@ -191,10 +191,10 @@ li b{color:#020617} .mut{color:var(--mut)}
         <div class="bar"><span>Mercado crudo (ref.)</span><div class="t"><i data-v="0.9664"></i></div><span class="n">0.9664</span></div>
         <div class="bar best"><span>LR sobre cuotas (<i>baseline</i>)</span><div class="t"><i data-v="0.9657"></i></div><span class="n">0.9657</span></div>
       </div>
-      <p class="mut" style="font-size:16px;margin-top:10px">Log loss medio, 6 temporadas de validación (menor es mejor). El eje empieza en 0.95 para hacer visibles las diferencias.</p>
+      <p class="mut" style="font-size:16px;margin-top:10px">Log loss medio, 6 temporadas de validación (menor es mejor). «ref.» = referencia sin aprendizaje (no entrena nada). El eje empieza en 0.95 para hacer visibles las diferencias.</p>
     </div>
     <div class="col step" style="max-width:400px"><ul>
-      <li>Ningún modelo flexible supera a la LR (el MLP, el mejor de ellos, +0.0014).</li>
+      <li>Ningún modelo flexible supera a la LR (el MLP, el mejor de ellos, +0.0014). Con rejillas más amplias el SVM mejora a 0.9840 y sigue sin alcanzarla.</li>
       <li>Árboles: profundidad óptima <b>1</b>. SVM: γ → 0.</li>
       <li class="mut" style="font-size:20px">La relación precio–resultado es aditiva y casi lineal.</li>
     </ul></div>
@@ -227,7 +227,7 @@ li b{color:#020617} .mut{color:var(--mut)}
 <!-- 8. Test holdout -->
 <section class="slide" data-n="8">
   <div class="kicker">Test holdout · 2024/25 y 2025/26</div>
-  <h2>La prueba final: datos que nunca participaron en una decisión</h2>
+  <h2>La prueba final: datos nunca usados en decisiones</h2>
   <div class="kpis" style="margin-top:14px">
     <div class="kpi step"><div class="v" data-count="0.9651" data-dec="4">0.9651</div><div class="l">log loss del modelo final en test<br>(validación: 0.9653)</div></div>
     <div class="kpi step"><div class="v" style="color:var(--acc2)" data-count="0.9667" data-dec="4">0.9667</div><div class="l">log loss del mercado crudo en test</div></div>
@@ -236,12 +236,12 @@ li b{color:#020617} .mut{color:var(--mut)}
   </div>
   <div class="grow" style="align-items:flex-start;margin-top:12px">
     <div class="col"><ul>
-      <li class="step" style="font-size:21px;margin:7px 0"><b>Sin sobreajuste a la selección:</b> 0.9651 en test frente a 0.9653 en validación.</li>
-      <li class="step" style="font-size:21px;margin:7px 0">Frente a <b>Pinnacle cruda</b> (−0.0009, p ajustado 0.045: <b>en el límite</b>) y al <b><i>baseline</i></b> (LR de tres variables, −0.0001): <b>sin diferencia clara</b>. El consenso es la referencia más débil.</li>
-      <li class="step" style="font-size:21px;margin:7px 0">Mismo AUC que el mercado (0.683). Con <b>Pinnacle observada</b> (4,440 partidos) la ventaja es −0.0020; con el <b>respaldo de consenso</b> (1,559, 2025/26) es −0.0004 y no se distingue de 0.</li>
-      <li class="step" style="font-size:21px;margin:7px 0">Por liga solo <b>Turquía</b> es significativa (en validación fue Portugal): mejora pequeña y repartida.</li>
+      <li class="step" style="font-size:19px;margin:5px 0"><b>Sin sobreajuste a la selección:</b> 0.9651 en test frente a 0.9653 en validación.</li>
+      <li class="step" style="font-size:19px;margin:5px 0">Frente a <b>Pinnacle cruda</b> (−0.0009, p ajustado 0.045, <b>en el límite</b>) y al <b><i>baseline</i></b> (−0.0001): <b>sin diferencia clara</b>. El consenso es la referencia más débil.</li>
+      <li class="step" style="font-size:19px;margin:5px 0">Mismo AUC que el mercado (0.683). Con <b>Pinnacle observada</b> (4,440 partidos) la ventaja es −0.0020; con el <b>respaldo de consenso</b> (1,559) es −0.0004, sin diferencia.</li>
+      <li class="step" style="font-size:19px;margin:5px 0">Por liga solo <b>Turquía</b> es significativa (en validación, Portugal): mejora pequeña y repartida.</li>
     </ul></div>
-    <div class="col fig step" style="max-width:470px"><img src="img/p_test_temporada.png" alt="" style="max-height:300px"><div class="cap">Modelo final − mercado por temporada (milésimas de log loss); con borde, las dos del test</div></div>
+    <div class="col fig step" style="max-width:470px"><img src="img/p_test_temporada.png" alt="" style="max-height:250px"><div class="cap">Modelo final − mercado por temporada (milésimas de log loss); con borde, las dos del test</div></div>
   </div>
   <div class="foot"><span>Entrenado solo con train/val (30,120 partidos) · 5,999 partidos en test, evaluados una sola vez</span><span>8</span></div>
 </section>
@@ -261,7 +261,7 @@ li b{color:#020617} .mut{color:var(--mut)}
         <tr class="hl"><td>Macro</td><td>0.684 (igual que el mercado)</td></tr>
       </table>
       <ul style="margin-top:18px">
-        <li class="step">La ventaja es de <b>escala</b> (log loss, ECE 0.0079), no de orden (AUC).</li>
+        <li class="step">La ventaja es de <b>escala</b> (log loss, ECE 0.0079, tramos de igual ancho), no de orden (AUC).</li>
         <li class="step">El empate casi nunca es la clase más probable: <b>10 veces en 18,184</b> partidos.</li>
       </ul>
     </div>
@@ -316,7 +316,7 @@ li b{color:#020617} .mut{color:var(--mut)}
     <div class="col"><ul>
       <li class="step">Ni plantilla, ni forma, ni Elo, ni goles esperados, ni modelos más complejos <b>mejoran al precio</b>.</li>
       <li class="step">El mejor modelo es una <b>LR de dos variables</b> que <b>recalibra</b> el precio de Pinnacle: −0.0011 (validación) y −0.0016 (<b>test</b>) frente al consenso, pero sin ventaja clara frente a Pinnacle ni al <i>baseline</i>; mismo AUC.</li>
-      <li class="step">No hay <i>concept drift</i> y el <i>backtest</i> no arroja retorno significativamente positivo.</li>
+      <li class="step">Preguntas de investigación: <b>P1</b> sin <i>concept drift</i>; <b>P2</b> la plantilla ayuda sin cuotas, no con cuotas; <b>P3</b> con cuotas gana MI sobre PCA; <b>P4</b> el <i>backtest</i> no da <i>value bets</i> rentables demostrables.</li>
     </ul></div>
     <div class="col"><div class="kpi step" style="padding:22px 26px"><div class="kicker" style="margin-bottom:6px;color:var(--warn)">Limitaciones y ética</div>
       <ul>
@@ -337,7 +337,7 @@ li b{color:#020617} .mut{color:var(--mut)}
     <div class="big">¿Preguntas?</div>
     <p class="sub" style="margin-top:28px">Código, notebooks 01–08 e informe en el repositorio público:</p>
     <p style="font-size:26px;margin-top:8px;color:var(--acc);font-weight:700">github.com/jcarlos-t/MLProject</p>
-    <div style="margin-top:34px"><span class="chip">Informe IEEE · 13 páginas</span><span class="chip">8 notebooks reproducibles</span><span class="chip">validación temporal</span></div>
+    <div style="margin-top:34px"><span class="chip">Informe IEEE · 9 páginas</span><span class="chip">8 notebooks reproducibles</span><span class="chip">validación temporal</span></div>
   </div>
   
 </section>
