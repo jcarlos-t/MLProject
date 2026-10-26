@@ -100,16 +100,16 @@ detectar **apuestas con valor (value bets)**.
 | Mejor modelo (log loss, 6 folds de validación) | **Modelo final (LR de 2 variables sobre Pinnacle): 0.9653**; LR anterior de 3 variables 0.9657; mercado crudo 0.9664; prior 1.0720. Frente al mercado −0.0011 [−0.0018, −0.0004], p ajustado 0.004, mismo AUC (0.684) |
 | **Test holdout (2024/25–2025/26, 5,999 partidos)** | **Modelo final: 0.9651**; mercado crudo 0.9667; Pinnacle cruda 0.9660; LR de 3 variables 0.9652; prior 1.0750. Frente al mercado −0.0016 [−0.0026, −0.0005], p ajustado 0.012, 2/2 temporadas; frente a Pinnacle −0.0009 (p ajustado 0.063, no significativo). Sin sobreajuste a la selección (validación 0.9653). Por liga solo Turquía es significativa (en validación, Portugal) |
 | ¿Algo supera al mercado? | No: plantilla, forma, estadísticas, 33 habilidades, HGB, MLP, XGBoost, SVM y ensemble empatan o empeoran (+0.002 a +0.028) |
-| Con cuotas vs sin cuotas (ganador, sin empates) | 71.6% vs 69.7%; cuando discrepan acierta el modelo con cuotas el 57.5% (McNemar p < 0.0001); residuo R² = −0.001 |
+| Con cuotas vs sin cuotas (ganador, sin empates) | 71.6% vs 70.4% (el benchmark sin cuotas usa plantilla z + Elo + EWMA + habilidades); cuando discrepan acierta el modelo con cuotas el 56.6% (McNemar p < 0.0001); residuo R² = −0.0006 |
 | Plantilla frente a forma | Sin cuotas la plantilla mejora el log loss en 0.039; con cuotas, ≈ 0 incluso al inicio de la temporada |
 | MI vs PCA | MI gana con cuotas (6/6 folds); PCA ≥ MI sin cuotas; reducir casi no mejora a usar todas las variables |
 | Discriminación (AUC) | Mercado ≈ LR (AUC macro 0.684): local 0.73, visitante 0.74, empate 0.59; el SVM tiene `P(empate)` invertida (AUC 0.44) con `probability=True` |
 | Robustez de la evaluación | K-fold aleatorio y leave-one-season-out (solo train/val) dan 0.0001–0.0014 menos log loss (más optimistas); IC por bloques ×1.00 respecto al de partidos; 10 de 11 contrastes significativos tras BH (la LR frente al mercado no); validación anidada reproduce el log loss (±0.0001) |
 | Preprocesamiento | Convertir cuotas a probabilidad importa (+0.0057 las crudas); escalado, faltantes, transformaciones y WOE no mejoran; `MKT_margin` es no estacionaria (PSI 0.6–1.5) |
-| Features de fuerza de equipo | Sin cuotas, Elo + EWMA de goles + plantilla z mejoran el benchmark 0.0068 (≈ 0.9884 → 0.9817) y los tiros a puerta ponderados otros 0.0027 (árboles, *p* ajustado 0.017); con cuotas ninguna variable nueva aporta (17 comparaciones, Benjamini–Hochberg) |
-| Mercado | El cierre subsume a la apertura (log loss Pinnacle 0.9658 → 0.9620); el modelo sin cuotas no anticipa el movimiento (r = −0.011; CLV −0.13 pp) |
+| Features de fuerza de equipo | Sin cuotas, Elo + EWMA de goles + plantilla z mejoran el benchmark 0.0068 (≈ 0.9884 → 0.9817; ya aplicado en el benchmark de `06_mercado.ipynb`) y los tiros a puerta ponderados otros 0.0027 (árboles, *p* ajustado 0.017); con cuotas ninguna variable nueva aporta (17 comparaciones, Benjamini–Hochberg) |
+| Mercado | El cierre subsume a la apertura (log loss Pinnacle 0.9658 → 0.9620); el modelo sin cuotas no anticipa el movimiento (r = −0.027, el cierre corrige sus discrepancias; CLV −0.17 pp frente a −0.02 pp del lado contrario) |
 | Calibración | Favoritos +2 a +4 pp, longshots −1.5 pp con normalización proporcional; casi desaparece con normalización por potencia |
-| Backtest | Sin cuotas: ROI −11.8% a −16.5% (promete +21% a +38%); LR con B365: +9.7% [−0.7%, +20.3%], no significativo; regla `|ŷ| > 2`: 642 apuestas, −1.3% [−4.5%, +2.0%]. Modelo final en el test: Pinnacle −2.2% [−9.3%, +4.9%], B365 +11.4% [−5.5%, +29.3%]: sin retorno significativo |
+| Backtest | Sin cuotas: ROI −8.4% a −13.8% (promete +16% a +31%); LR con B365: +9.7% [−0.4%, +20.4%], no significativo; regla `|ŷ| > 2`: 718 apuestas, −3.1% [−6.4%, +0.1%] (no reproduce el +1.58% del paper). Modelo final en el test: Pinnacle −2.2% [−9.3%, +4.9%], B365 +11.4% [−5.5%, +29.3%]: sin retorno significativo |
 
 Conclusión: en 2014–2026 el mercado es eficiente respecto a los fundamentos disponibles; el detalle y las limitaciones están en `docs/informe.tex`.
 

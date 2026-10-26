@@ -251,7 +251,7 @@ cuotas + todo lo nuevo & $+0.0004$ & $[-0.0004, +0.0011]$ \\
 
 Todos los modelos se comparan con dos \textit{baselines} sin aprendizaje: el \textbf{\textit{prior}} (frecuencias de $H/D/A$ del entrenamiento) y el \textbf{mercado crudo} (probabilidades implícitas del consenso, Ec.~\ref{eq:oddsprob}). Un modelo aporta valor solo si mejora al \textit{prior} y, sobre todo, al mercado. Los modelos de clasificación son: \textbf{regresión logística} (LR, estandarizada, regularización $\ell_2$; recibe F1); \textbf{HGB} (\textit{gradient boosting} con histogramas, tolera NaN) y \textbf{XGBoost}, que reciben F2; \textbf{SVM} con núcleo RBF (entrenado con las 9{,}000 filas más recientes por su coste cuadrático) y \textbf{MLP} (ReLU, \textit{early stopping}, tres semillas), que reciben F1; y un \textit{ensemble} que promedia sus probabilidades. Para la tarea de regresión de $GD$ se usan regresión lineal, Random Forest y HGB (y SVR en una comprobación), promediados como en \cite{stubinger2020}, y se convierten en probabilidades 1X2 con una regresión logística multinomial ajustada en la temporada anterior.
 
-Se añaden dos análisis de selección de variables: MI univariada (\textit{top-}$k$) frente a PCA, ambos calculados solo con el entrenamiento de cada \textit{fold}. Se consideran dos escenarios: \textbf{con cuotas}, donde el precio es una variable dominante, y \textbf{sin cuotas}, el modelo de fundamentos que se compara con el mercado.
+Se añaden dos análisis de selección de variables: MI univariada (\textit{top-}$k$) frente a PCA, ambos calculados solo con el entrenamiento de cada \textit{fold}. Se consideran dos escenarios: \textbf{con cuotas}, donde el precio es una variable dominante, y \textbf{sin cuotas}, el modelo de fundamentos que se compara con el mercado. Para que ese \textit{benchmark} sea el mejor posible usa la combinación ganadora de la Sección~\ref{sec:preproc} (plantilla normalizada por liga, Elo y medias exponenciales de puntos y de diferencia de goles) más las 33 habilidades, y no la forma de cinco partidos.
 
 \textbf{Modelo final.} Con $x_1=\ln(p_H/p_A)$ y $x_2=p_D$ de la apertura de Pinnacle, la LR multinomial estima $P(c\mid x)=\exp(w_c^\top x+b_c)/\sum_{k}\exp(w_k^\top x+b_k)$ con penalización $\ell_2$ de fuerza $1/C$, $C=0.01$. Con solo dos entradas y tres clases son nueve parámetros, de modo que el modelo no puede sobreajustar y su única función es reescalar el precio: aumentar o reducir la confianza del mercado y ajustar la probabilidad de empate. Se eligió esta familia porque el \textit{log loss} es una regla de puntuación propia y porque las rejillas extendidas (Sección~\ref{sec:diseno}) indicaron que la relación es casi lineal. Los modelos más flexibles se mantienen como contraste: si hubiera una relación no lineal entre el precio y el resultado, HGB, XGBoost o el MLP la habrían encontrado.
 
@@ -433,15 +433,15 @@ LR (3 variables de mercado) & 0.9652 & 0.1931 & 0.683 & 0.0156 \\
 
 
 \subsection{El mercado como referencia}
-\textbf{Sin cuotas.} Un modelo de fundamentos acierta el ganador en el 69.7\% de los partidos sin empate frente al 71.6\% del modelo con cuotas; cuando discrepan (12.5\%), acierta el modelo con cuotas el 57.5\% (McNemar $p<0.0001$). Lo que las cuotas no explican no es predecible con estas variables: el $R^2$ fuera de muestra del residuo es $-0.001$ y positivo en 1 de 6 \textit{folds}. Las 33 habilidades individuales reducen el RMSE de $GD$ de 1.856 a 1.683, pero empeoran el \textit{log loss} al añadirse al precio.
+\textbf{Sin cuotas.} Un modelo de fundamentos acierta el ganador en el 70.4\% de los partidos sin empate frente al 71.6\% del modelo con cuotas; cuando discrepan (9.4\%), acierta el modelo con cuotas el 56.6\% (McNemar $p<0.0001$). Lo que las cuotas no explican no es predecible con estas variables: el $R^2$ fuera de muestra del residuo es $-0.0006$ y positivo en 2 de 6 \textit{folds}. Las 33 habilidades individuales reducen el RMSE de $GD$ de 1.856 a 1.683, pero empeoran el \textit{log loss} al añadirse al precio.
 
-\textbf{Apertura y cierre.} El cierre subsume a la apertura (\textit{log loss} de Pinnacle 0.9658 $\to$ 0.9620; el coeficiente de la apertura es $\approx0$ y el del cierre $\approx1$ en el \textit{encompassing}), y el modelo sin cuotas no anticipa el movimiento (correlación $-0.011$; CLV $-0.13$ pp, igual o peor que el del lado contrario, $-0.06$ pp).
+\textbf{Apertura y cierre.} El cierre subsume a la apertura (\textit{log loss} de Pinnacle 0.9658 $\to$ 0.9620; el coeficiente de la apertura es $\approx0$ y el del cierre $\approx1$ en el \textit{encompassing}), y el modelo sin cuotas no anticipa el movimiento (correlación $-0.027$, ligeramente negativa: el cierre tiende a corregir sus discrepancias; CLV $-0.17$ pp, frente a $-0.02$ pp del lado contrario).
 
 \textbf{Pruebas independientes.} La Tabla~\ref{tab:mercado} resume las cuatro pruebas de eficiencia: ninguna encuentra información que el mercado no tenga.
 
 \textbf{Calibración del mercado.} Los favoritos ganan entre 2 y 4 pp más de lo que implica el precio y los \textit{longshots} menos (Fig.~\ref{fig:sesgo}); con la normalización por potencia del margen la pendiente baja de $1.09$--$1.24$ a $1.01$--$1.08$, así que parte del sesgo es consecuencia del método con que se elimina el margen.
 
-\textbf{\textit{Backtest}.} Con cuotas de apertura (Fig.~\ref{fig:backtest}), el modelo sin cuotas pierde entre $-11.8\%$ y $-16.5\%$ por unidad apostada mientras promete entre $+21\%$ y $+38\%$ (``maldición del ganador'': las apuestas que elige son justo aquellas donde su error es mayor); la regla $|\hat y|>2$ de Stübinger et al. da $-1.3\%$ ($[-4.5\%, +2.0\%]$) en 642 apuestas; y el modelo final obtiene $-1.5\%$ en Pinnacle ($[-7.3\%, +4.4\%]$) en la ventana 2022/23--2023/24. El $+3.0\%$ con Bet365 se apoya en 131 apuestas con IC de $\pm46$ puntos y no es evidencia de rentabilidad; en el test holdout el resultado es análogo (Sección~\ref{sec:test}).
+\textbf{\textit{Backtest}.} Con cuotas de apertura (Fig.~\ref{fig:backtest}), el modelo sin cuotas pierde entre $-8.4\%$ y $-13.8\%$ por unidad apostada mientras promete entre $+16\%$ y $+31\%$ (``maldición del ganador'': las apuestas que elige son justo aquellas donde su error es mayor); la regla $|\hat y|>2$ de Stübinger et al. da $-3.1\%$ ($[-6.4\%, +0.1\%]$) en 718 apuestas, de modo que no reproduce el $+1.6\%$ del artículo; y el modelo final obtiene $-1.5\%$ en Pinnacle ($[-7.3\%, +4.4\%]$) en la ventana 2022/23--2023/24. El $+3.0\%$ con Bet365 se apoya en 131 apuestas con IC de $\pm46$ puntos y no es evidencia de rentabilidad; en el test holdout el resultado es análogo (Sección~\ref{sec:test}).
 
 \begin{figure}[H]
 \centering
@@ -524,12 +524,12 @@ La matriz de confusión (Fig.~\ref{fig:conf}) muestra dónde se equivoca el mode
 \toprule
 \textbf{Prueba} & \textbf{Resultado} \\
 \midrule
-Modelo de residuo ($GD-\hat y_M$) & $R^2=-0.001$; positivo en 1/6 \textit{folds} \\
+Modelo de residuo ($GD-\hat y_M$) & $R^2=-0.0006$; positivo en 2/6 \textit{folds} \\
 Apertura frente a cierre & \textit{log loss} 0.9658 $\to$ 0.9620; coef. apertura $\approx0$, cierre $\approx1$ \\
-Movimiento del mercado & correlación con la discrepancia del modelo: $-0.011$ \\
-CLV & $-0.13$ pp (lado contrario: $-0.06$ pp) \\
-\textit{Backtest} sin cuotas & ROI $-11.8\%$ a $-16.5\%$; promete $+21\%$ a $+38\%$ \\
-Regla $|\hat y|>2$ & 642 apuestas, ROI $-1.3\%$ ($[-4.5\%,+2.0\%]$) \\
+Movimiento del mercado & correlación con la discrepancia del modelo: $-0.027$ (el cierre la corrige) \\
+CLV & $-0.17$ pp (lado contrario: $-0.02$ pp) \\
+\textit{Backtest} sin cuotas & ROI $-8.4\%$ a $-13.8\%$; promete $+16\%$ a $+31\%$ \\
+Regla $|\hat y|>2$ & 718 apuestas, ROI $-3.1\%$ ($[-6.4\%,+0.1\%]$) \\
 Modelo final (Pinnacle) & ROI $-1.5\%$ ($[-7.3\%,+4.4\%]$) en validación; $-2.2\%$ ($[-9.3\%,+4.9\%]$) en test \\
 \bottomrule
 \end{tabularx}
@@ -576,6 +576,7 @@ Con cuotas, el precio domina: barajarlo sube el \textit{log loss} en 0.153 y nin
 \item Pinnacle cubre solo el 48\% de 2025/26 (temporada del test), así que esa temporada se parece más al consenso.
 \item Solo hay partidos de liga: el descanso y la congestión no ven copas ni competiciones europeas.
 \item La mejora por liga no se repite entre validación (Portugal) y test (Turquía): con nueve ligas y unos 600--760 partidos por liga en el test no es una conclusión firme.
+\item Los hiperparámetros del modelo de regresión sin cuotas (RF y HGB) se eligieron antes de adoptar el bloque Elo/EWMA y se mantuvieron; son conservadores y el RF casi no depende de ellos.
 \item El test holdout son solo dos temporadas (5{,}999 partidos): sus intervalos son amplios, y el modelo desplegado se entrenó sin esos datos; si se reentrenara con ellos, esa versión ya no tendría evaluación independiente.
 \item Las diferencias entre modelos son pequeñas (0.001--0.004) frente a la variación entre temporadas ($\pm0.013$), por lo que se interpretan con intervalos y no con valores puntuales.
 \item La generalización a otras ligas, deportes u otro periodo no está probada.
@@ -588,7 +589,7 @@ Con cuotas, el precio domina: barajarlo sube el \textit{log loss} en 0.153 y nin
 \begin{enumerate}
     \item \textbf{El mercado es eficiente respecto a los fundamentos disponibles.} El mejor modelo es una regresión logística de dos variables sobre la apertura de Pinnacle (\textit{log loss} 0.9653 en validación y 0.9651 en el test holdout; $-0.0011$ y $-0.0016$ frente al mercado, \textit{p} ajustado $0.004$ y $0.012$), con el mismo AUC: refina el precio, no aporta información nueva.
     \item Ni la plantilla (ni siquiera la del once titular normalizada por liga), ni la forma, ni Elo, ni los goles esperados, ni las 33 habilidades, ni modelos más complejos mejoran al precio; los tiros a puerta aportan solo sin cuotas.
-    \item Sin cuotas se predice casi tan bien (70.0\% frente a 71.8\% de acierto del ganador), pero no mejor, y el cierre subsume a la apertura.
+    \item Sin cuotas se predice casi tan bien (70.4\% frente a 71.6\% de acierto del ganador), pero no mejor, y el cierre subsume a la apertura.
     \item El \textit{backtest} no arroja un retorno significativamente positivo y la calibración del mercado depende del método de normalización del margen.
     \item No hay \textit{concept drift}, y la selección de variables por MI o PCA nunca supera a usar todas.
 \end{enumerate}
