@@ -19,6 +19,8 @@ Usage:
 """
 import re
 import unicodedata
+import json
+import sys
 
 import numpy as np
 import pandas as pd
@@ -480,35 +482,23 @@ def join_matches_squad():
     sq = pd.read_csv(sq_path)
     cm = pd.read_csv(cm_path)
 
-    def season_code(s):
-        return s.astype(int).map(SEASON_SMAP).astype(str)
-
-    sqj = sq.copy()
-    sqj["season_code"] = season_code(sqj["season"])
-    sqj["skc"] = sqj["season_code"] + "|" + sqj["club"].astype(str)
-
-    cmj = cm.copy()
-    cmj["season_code"] = season_code(cmj["season"])
-    cmj["skc"] = cmj["season_code"] + "|" + cmj["club"].astype(str)
-    cmj["skm"] = cmj["season_code"] + "|" + cmj["div"] + "|" + cmj["team"]
-
-    # team-slot (Season|Div|Team) -> valores de squad
-    joined = sqj.merge(cmj[["skc", "skm"]], on="skc", how="inner")
-    sq_by_skm = {}
-    for r in joined.itertuples(index=False):
-        sq_by_skm[r.skm] = [getattr(r, f) for f in SQUAD_FEAT]
-
+    available = json.loads((Path(__file__).parent/'snapshot_availability.json').read_text())
+    dates = {e['year']: pd.Timestamp(e['available_at']) for e in available['snapshots']}
+    joined = sq.merge(cm[['season', 'club', 'div', 'team']], on=['season', 'club'], validate='one_to_one')
+    joined['available_at'] = joined.season.map(dates)
+    joined = joined.dropna(subset=['available_at']).sort_values('available_at')
+    match_dates = pd.to_datetime(m.Date, dayfirst=True, format='mixed')
+    groups = {k: g for k, g in joined.groupby(['div', 'team'])}
     for side in ("HomeTeam", "AwayTeam"):
-        key = m["Season"] + "|" + m["Div"] + "|" + m[side]
-        vals = key.map(sq_by_skm)
-        for f in SQUAD_FEAT:
-            m[f"{side}_sq_{f}"] = pd.NA
-        m[f"{side}_sq_mapped"] = vals.notna().astype(int)
-        hit = m.index[vals.notna()]
-        if len(hit):
-            arr = np.array(vals.loc[hit].tolist())
-            for j, f in enumerate(SQUAD_FEAT):
-                m.loc[hit, f"{side}_sq_{f}"] = arr[:, j]
+        values = np.full((len(m), len(SQUAD_FEAT)), np.nan)
+        for key, idx in m.groupby(['Div', side]).groups.items():
+            g = groups.get(key)
+            if g is None: continue
+            positions = np.searchsorted(g.available_at.to_numpy(), match_dates.loc[idx].to_numpy(), side='left')-1
+            good = positions >= 0
+            values[np.asarray(idx)[good]] = g[SQUAD_FEAT].to_numpy(float)[positions[good]]
+        for j, f in enumerate(SQUAD_FEAT): m[f'{side}_sq_{f}'] = values[:, j]
+        m[f'{side}_sq_mapped'] = np.isfinite(values[:, 0]).astype(int)
 
     m.to_csv(DATA / "matches_sq.csv", index=False)
     hits = (m["HomeTeam_sq_mapped"] == 1).sum() + (m["AwayTeam_sq_mapped"] == 1).sum()
@@ -521,18 +511,11 @@ def join_matches_squad():
 # Main
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    done = [
-        consolidate_matches(),
-        consolidate_warmup(),
-        consolidate_players(),
-        normalize_players(),
-        squad_quality(),
-        map_clubs(),
-        join_matches_squad(),
-    ]
-    if all(done):
-        print()
-        print("=== Listo: base unificada en data/matches_sq.csv (sin EDA, solo joins). ===")
-    else:
-        print()
-        print("=== ERRORES: revisa el paso fallido (data cruda en scripts/data, ejecuta fetch_data.py primero). ===")
+    from manifest import huellas
+    expected = json.loads((Path(__file__).parent/'data_manifest.json').read_text())['archivos']
+    if huellas() != expected:
+        sys.exit('Los crudos no coinciden con el manifiesto. No se generaran derivados parciales.')
+    for step in (consolidate_matches, consolidate_warmup, consolidate_players,
+                 normalize_players, squad_quality, map_clubs, join_matches_squad):
+        if not step(): sys.exit(f'Fallo {step.__name__}; se detiene la cadena.')
+    print('Base unificada con cruce temporal; faltantes conservados. Ejecutar scripts/run_revision.py.')

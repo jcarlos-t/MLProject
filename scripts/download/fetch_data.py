@@ -59,6 +59,7 @@ def download_match_data():
     ctx = ssl.create_default_context()
     total = len(WARMUP_SEASONS + SEASONS) * len(LEAGUES)
     count = 0
+    failed = False
     for season in WARMUP_SEASONS + SEASONS:
         for league in LEAGUES:
             count += 1
@@ -72,11 +73,16 @@ def download_match_data():
                 req = urllib.request.Request(url, headers=HEADERS)
                 with urllib.request.urlopen(req, context=ctx) as resp:
                     data = resp.read()
-                with open(out, "wb") as f:
+                if b'HomeTeam' not in data.splitlines()[0]:
+                    raise ValueError('La respuesta no es un CSV de partidos')
+                with open(out + '.part', "wb") as f:
                     f.write(data)
+                os.replace(out + '.part', out)
                 print(f"  OK ({len(data)} bytes)")
             except Exception as e:
+                failed = True
                 print(f"  FAILED: {e}")
+    return not failed
 
 
 def download_player_data():
@@ -85,10 +91,11 @@ def download_player_data():
     except ImportError:
         print("ERROR: kagglehub not installed. Run: pip install kagglehub")
         print("Skipping Kaggle player data download.")
-        return
+        return False
 
     os.makedirs(PLAYERS_RAW, exist_ok=True)
     downloaded = {}
+    failed = False
 
     for dataset, filename, local_name, fifa_filter in KAGGLE_DATASETS:
         out = os.path.join(PLAYERS_RAW, local_name)
@@ -103,6 +110,7 @@ def download_player_data():
                 path = kagglehub.dataset_download(dataset)
                 downloaded[cache_key] = path
             except Exception as e:
+                failed = True
                 err = str(e)
                 if "403" in err or "permission" in err.lower():
                     print(f"  FAILED: {dataset} requiere autenticacion de Kaggle.")
@@ -115,29 +123,34 @@ def download_player_data():
 
         src = os.path.join(path, filename)
         if not os.path.exists(src):
+            failed = True
             print(f"  WARNING: {filename} not found in {path}")
             continue
 
         if fifa_filter is not None:
             if pd is None:
-                print(f"  WARNING: pandas requerido para filtrar {filename}; copiando sin filtrar")
-                shutil.copy2(src, out)
+                raise RuntimeError(f'pandas requerido para filtrar {filename}; no se copiara una version incorrecta')
             else:
                 df = pd.read_csv(src)
                 df = df[df["fifa_version"].astype(int) == fifa_filter]
+                if df.empty:
+                    raise ValueError(f'No hay filas de fifa_version={fifa_filter}')
                 df.to_csv(out, index=False)
                 print(f"  filtered fifa_version=={fifa_filter} -> {out} ({len(df):,} rows)")
             continue
 
         shutil.copy2(src, out)
         print(f"  copied to {out}")
+    return not failed
 
 
 if __name__ == "__main__":
     print("=== Downloading match data from football-data.co.uk ===")
-    download_match_data()
+    matches_ok = download_match_data()
     print()
     print("=== Downloading player ratings from Kaggle ===")
-    download_player_data()
+    players_ok = download_player_data()
     print()
-    print("Done.")
+    if not (matches_ok and players_ok):
+        sys.exit('Descarga incompleta; no continuar con el procesamiento.')
+    print("Done. Comprobar manifest.py --check antes de procesar.")

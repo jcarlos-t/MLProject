@@ -1,0 +1,119 @@
+{
+  "policy": "strictly earlier than match date; fallback to previous verified snapshot per club; otherwise missing",
+  "snapshots": [
+    {
+      "year": 2015,
+      "raw_sha256": "c07d332d4088064b4a078897d19dc6c631dd7e53237b2790165eebffabac8a44",
+      "available_at": "2014-09-18",
+      "evidence": "same SoFIFA version/update identifier and matching overall for all shared player IDs",
+      "matched_players": 16155,
+      "source": "https://www.kaggle.com/datasets/stefanoleone992/ea-sports-fc-24-complete-player-dataset/versions/4",
+      "evidence_sha256": "fd788f7809a62e9715f0cfa4e45c92a97dd716bd6d64dc48a71a0e86369a0a7e",
+      "version_code": "150002"
+    },
+    {
+      "year": 2016,
+      "raw_sha256": "0f6f598616c4aec4377dcb079aecef08bdf9c3a6ad466081f010614ff2a9b200",
+      "available_at": "2015-09-21",
+      "evidence": "same SoFIFA version/update identifier and matching overall for all shared player IDs",
+      "matched_players": 15623,
+      "source": "https://www.kaggle.com/datasets/stefanoleone992/ea-sports-fc-24-complete-player-dataset/versions/4",
+      "evidence_sha256": "fd788f7809a62e9715f0cfa4e45c92a97dd716bd6d64dc48a71a0e86369a0a7e",
+      "version_code": "160002"
+    },
+    {
+      "year": 2017,
+      "raw_sha256": "c71c3a2dfcce7c2caee669be24848fdbc1137a8bc8ed6d343b2566c3132ae525",
+      "available_at": "2016-09-20",
+      "evidence": "same SoFIFA version/update identifier and matching overall for all shared player IDs",
+      "matched_players": 17596,
+      "source": "https://www.kaggle.com/datasets/stefanoleone992/ea-sports-fc-24-complete-player-dataset/versions/4",
+      "evidence_sha256": "fd788f7809a62e9715f0cfa4e45c92a97dd716bd6d64dc48a71a0e86369a0a7e",
+      "version_code": "170002"
+    },
+    {
+      "year": 2018,
+      "raw_sha256": "66484eae37c5c45927370e7de72328c55e1315f83ae58f0ff5f1c5c022922a37",
+      "available_at": "2017-09-18",
+      "evidence": "same SoFIFA version/update identifier and matching overall for all shared player IDs",
+      "matched_players": 17954,
+      "source": "https://www.kaggle.com/datasets/stefanoleone992/ea-sports-fc-24-complete-player-dataset/versions/4",
+      "evidence_sha256": "fd788f7809a62e9715f0cfa4e45c92a97dd716bd6d64dc48a71a0e86369a0a7e",
+      "version_code": "180002"
+    },
+    {
+      "year": 2019,
+      "raw_sha256": "9435c61aae87941f716af8c5e9cea6d49dda7a1bc663a75ef4d98464d09b6c32",
+      "available_at": "2018-08-21",
+      "evidence": "same SoFIFA version/update identifier and matching overall for all shared player IDs",
+      "matched_players": 18085,
+      "source": "https://www.kaggle.com/datasets/stefanoleone992/ea-sports-fc-24-complete-player-dataset/versions/4",
+      "evidence_sha256": "fd788f7809a62e9715f0cfa4e45c92a97dd716bd6d64dc48a71a0e86369a0a7e",
+      "version_code": "190002"
+    },
+    {
+      "year": 2020,
+      "raw_sha256": "3eaecbe17d7e651e42eea11c6883b2e5528e7b6be02b68232b9151e95344e911",
+      "available_at": "2019-09-19",
+      "evidence": "same SoFIFA version/update identifier and matching overall for all shared player IDs",
+      "matched_players": 18482,
+      "source": "https://www.kaggle.com/datasets/stefanoleone992/ea-sports-fc-24-complete-player-dataset/versions/4",
+      "evidence_sha256": "fd788f7809a62e9715f0cfa4e45c92a97dd716bd6d64dc48a71a0e86369a0a7e",
+      "version_code": "200002"
+    },
+    {
+      "year": 2021,
+      "raw_sha256": "0a87e241d9f4bee65923a35012158b891e0d38a2f9f280d677d234afa401ab89",
+      "available_at": "2020-09-23",
+      "evidence": "same SoFIFA version/update identifier and matching overall for all shared player IDs",
+      "matched_players": 18890,
+      "source": "https://www.kaggle.com/datasets/stefanoleone992/ea-sports-fc-24-complete-player-dataset/versions/4",
+      "evidence_sha256": "fd788f7809a62e9715f0cfa4e45c92a97dd716bd6d64dc48a71a0e86369a0a7e",
+      "version_code": "210002"
+    },
+    {
+      "year": 2022,
+      "raw_sha256": "b82a9a932ef74729d05e95b6f72334e664711bf6326132d8c38f5912cfc41c3f",
+      "available_at": "2021-09-23",
+      "evidence": "same SoFIFA version/update identifier and matching overall for all shared player IDs",
+      "matched_players": 19238,
+      "source": "https://www.kaggle.com/datasets/stefanoleone992/ea-sports-fc-24-complete-player-dataset/versions/4",
+      "evidence_sha256": "fd788f7809a62e9715f0cfa4e45c92a97dd716bd6d64dc48a71a0e86369a0a7e",
+      "version_code": "220002"
+    },
+    {
+      "year": 2023,
+      "raw_sha256": "07eb7737a147d46bf847037f356a661619c9ce24ec5a190761e7f640f3625da3",
+      "available_at": "2022-09-26",
+      "evidence": "same SoFIFA version/update identifier and matching overall for all shared player IDs",
+      "matched_players": 18533,
+      "source": "https://www.kaggle.com/datasets/stefanoleone992/ea-sports-fc-24-complete-player-dataset/versions/4",
+      "evidence_sha256": "fd788f7809a62e9715f0cfa4e45c92a97dd716bd6d64dc48a71a0e86369a0a7e",
+      "version_code": "230002"
+    },
+    {
+      "year": 2024,
+      "raw_sha256": "12fd4638403eb0663093ee82a94558ff617e319d38fb3bebfe033a7fec11e6fc",
+      "available_at": "2023-09-22",
+      "evidence": "same SoFIFA version/update identifier and matching overall for all shared player IDs",
+      "matched_players": 18350,
+      "source": "https://www.kaggle.com/datasets/stefanoleone992/ea-sports-fc-24-complete-player-dataset/versions/4",
+      "evidence_sha256": "fd788f7809a62e9715f0cfa4e45c92a97dd716bd6d64dc48a71a0e86369a0a7e",
+      "version_code": "240002"
+    },
+    {
+      "year": 2025,
+      "raw_sha256": "576bf5dd7a178ae285f2ee6167a1fe2cebf58a36312e07c08d6cd63a812874b7",
+      "available_at": "2025-07-17",
+      "evidence": "explicit version in raw CSV",
+      "source": "https://www.kaggle.com/datasets/sametozturkk/ea-sports-fc-25-real-player-data-sofifa-merge"
+    },
+    {
+      "year": 2026,
+      "raw_sha256": "4399cb2bcc2a14a2872e76a118f8f4bf64d7954503949c75751a14f33863e3b2",
+      "available_at": "2025-09-19",
+      "evidence": "explicit fifa_update_date in raw CSV",
+      "source": "https://www.kaggle.com/datasets/rovnez/fc-26-fifa-26-player-data"
+    }
+  ]
+}

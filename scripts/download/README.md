@@ -1,53 +1,13 @@
-# Reproducibilidad de los datos
+# Fuentes, integridad y disponibilidad
 
-Este directorio contiene los scripts que **descargan y consolidan** los datos crudos.
-No hacen EDA ni modelado (eso vive en `../notebooks/`).
+`fetch_data.py` descarga 117 CSV de partidos (9 ligas × 13 temporadas, incluyendo calentamiento) y 12 snapshots de jugadores. No refresca silenciosamente archivos existentes. Una descarga fallida produce un estado de error y detiene la reproducción.
 
-## Qué hace cada script
+`manifest.py --check` exige las 129 huellas originales antes de procesar. `process_data.py` consolida, normaliza y mapea identidades; se detiene al fallar un paso. Su cruce de plantilla busca la última versión estrictamente anterior al partido, no la versión de toda la temporada.
 
-| Script | Entrada | Salida | Descripción |
-|---|---|---|---|
-| `fetch_data.py` | Internet (football-data.co.uk, Kaggle) | `data/raw/<league>_<season>.csv` (117 CSVs de partidos, incl. 2013/14 de calentamiento) y `data/players/raw/*.csv` (12 snapshots de ratings de jugadores) | Descarga de datos crudos. |
-| `process_data.py` | `data/raw/` y `data/players/raw/` | `data/matches.csv`, `data/players/raw/players_all.csv`, `data/players/normalized/players_*.csv`, `data/players/squad_quality_players.csv`, `data/players/club_map.csv`, `data/matches_sq.csv` | Consolidación y join por (Season, Div, Team). No hace EDA ni decide calidad. |
+El dataset científico se reconstruye desde esos crudos mediante `scripts/run_revision.py --stage prepare`. Conserva faltantes estructurales, cruza las habilidades por fecha, calcula historia sin resultados presentes/futuros y prepara las particiones. No utilizar derivados del archivo histórico para entrenar una versión corregida.
 
-> Todas las rutas relativas apuntan a `scripts/data/` (las salidas se escriben ahí, junto a los datos ya descargados).
+`snapshot_availability.json` conserva fecha, huella y evidencia de cada snapshot. Para FIFA 15–22 se contrastó el identificador de actualización incluido en `player_url` y todos los ratings overall compartidos con la misma versión del CSV original de FC24 (versión 4), que sí publica `update_as_of`. Los nombres de club pueden variar entre fuentes, por lo que se utiliza el identificador de versión y jugador. Las fechas explícitas de FC25 y FC26 son 17/07/2025 y 19/09/2025, respectivamente; el nombre del archivo FC26 alude a su captura del 21/09.
 
-## Requisitos
+Las cuotas son capturas pre-cierre, no apertura real garantizada. La advertencia de Football-Data sobre Pinnacle desde 23/07/2025 se aplica a la selección de precios y al backtest. Consultar https://football-data.co.uk/data.php y https://football-data.co.uk/notes.txt.
 
-- Python 3.10+
-- Conexión a internet (primera descarga)
-- Usa el entorno virtual del proyecto:
-
-```bash
-python -m venv .venv
-.venv/bin/pip install -r requirements.txt
-```
-
-## Orden de ejecución
-
-```bash
-# 1) Descarga crudos (football-data.co.uk + snapshots de Kaggle)
-.venv/bin/python scripts/download/fetch_data.py
-
-# 2) Consolida partidos, jugadores y squad quality
-.venv/bin/python scripts/download/process_data.py
-```
-
-(Si los archivos ya existen en `scripts/data/`, la descarga los salta/sobrescribe según
-los mensajes del script; es seguro re-ejecutar.)
-
-## Notas
-
-- **Flujo aguas arriba del modelado**: `../notebooks/01_eda.ipynb` limpia `matches_sq.csv` y exporta
-  `matches_clean.csv` (dataset limpio); `../notebooks/02_feature.ipynb` parte de ese archivo limpio y exporta
-  `dataset_final.csv` (33 features + target), `dataset_extra.csv` (25 variables nuevas) y `backtest_odds.csv`.
-- **Kaggle**: los 10 snapshots provienen de datasets públicos (no requieren credenciales para
-  descargar vía `kagglehub`). Están definidos en `KAGGLE_DATASETS` dentro de `fetch_data.py`;
-  algunos usan el filtro `fifa_version` para fijar el snapshot de esa temporada.
-- **Snapshots**: hay exactamente un snapshot por temporada (FIFA 15 → FC 26, temporadas 2014/15–2025/26) para evitar mezclar versiones de
-  ratings de EA/FC en el cruce de `process_data.py`.
-- El mapeo de clubes (EA → football-data) se hace en `process_data.py` (paso 5: overrides + `rapidfuzz`).
-  Cobertura de squad quality: 100%.
-## Huellas de los datos
-
-`manifest.py` calcula el SHA-256 de cada CSV crudo y lo guarda en `data_manifest.json` (versionado). `python scripts/download/manifest.py --check` compara los datos locales con ese manifiesto: si una descarga nueva difiere (por ejemplo, football-data.co.uk actualizó 2025/26), lo avisa.
+No se publican datos crudos. Para reproducir una nueva descarga que difiera del manifiesto, primero se debe documentar la nueva versión de fuente y su evaluación; no sobrescribir las huellas solo para hacer pasar la comprobación.
