@@ -11,7 +11,7 @@ Proyecto del curso de Machine Learning (UTEC), segunda etapa (modelado, evaluaci
 - Elmer José Manuel Villegas Suárez
 - Joseph Anderson Cose Rojas
 
-**Informe:** `docs/informe.pdf` (formato IEEE, fuente en `docs/informe.tex`). **Presentación:** `docs/presentacion/presentacion.pdf` (13 diapositivas, 10 minutos; fuente HTML en `docs/presentacion/presentacion.html`, se navega con las flechas; alineada con las cifras del informe, incluido el test holdout). **Cuadernos:** `scripts/notebooks/`, que se leen y ejecutan en orden 01 a 08 (ver `scripts/notebooks/README.md`). **Modelo final:** `scripts/data/modelo_final.json` (se genera con `08_modelo_final.ipynb`).
+**Informe:** `docs/informe.pdf` (formato IEEE, fuente en `docs/informe.tex`). **Presentación:** `docs/presentacion/presentacion.pdf` (13 diapositivas, 10 minutos; fuente HTML en `docs/presentacion/presentacion.html`, se navega con las flechas; alineada con las cifras del informe, incluido el test holdout). **Cuadernos:** `scripts/notebooks/`, que se leen y ejecutan en orden 01 a 09 (ver `scripts/notebooks/README.md`). **Modelo final:** `scripts/data/modelo_final.json` (se genera con `08_modelo_final.ipynb`).
 
 ---
 
@@ -89,6 +89,7 @@ detectar **apuestas con valor (value bets)**.
    - **Validación cruzada**: la temporal expansiva se compara con K-fold aleatorio y *leave-one-season-out*; selección de hiperparámetros con **validación anidada temporal**; rejillas extendidas para detectar óptimos en el borde.
    - **Inferencia**: *bootstrap* por bloques (temporada–semana) y Benjamini–Hochberg sobre todas las comparaciones.
    - **Justificación empírica del preprocesamiento**: representación de cuotas, escalado, faltantes, asimetría, WOE/IV, memoria de la forma (EWMA, Elo) y **PSI** entre temporadas.
+   - **Respuesta al feedback del profesor** (`09_pesos_ensembles.ipynb`, solo validación; el test no se reutiliza): pesos por muestra y remuestreo 50/50 según si la cuota acierta, ensembles revisados (sin SVM, ponderado anidado, stacking, Random Forest), el modelo sin cuotas como predictor de cuotas y un cuadro único de comparación directa con las cuotas (`comparacion_directa.csv`).
    - **Modelo final** (`08_modelo_final.ipynb`): regresión logística de 2 variables (`REF_logit`, `REF_pD`) sobre la cuota de apertura de Pinnacle (respaldo: consenso), sin `MKT_margin`, con `C` por validación anidada; se **entrena solo con 2014/15–2023/24**, se guarda en `modelo_final.json` / `.joblib` y se usa con `predecir_1x2`; su evaluación en el test holdout (Paso 8) escribe `modelo_final_test.csv`.
 7. **Pruebas de eficiencia del mercado y backtest** (`06_mercado.ipynb`):
    - Modelo de residuo (`GD − ŷ_mercado`), *encompassing* apertura vs cierre de Pinnacle, CLV frente a la línea de cierre y backtest de apuestas de una unidad con cuotas de apertura de Bet365 y Pinnacle (umbral `τ` elegido en los 4 primeros folds, reportado en los 2 últimos de validación y, sin volver a elegirlo, aplicado una vez al test holdout).
@@ -99,7 +100,10 @@ detectar **apuestas con valor (value bets)**.
 |---|---|
 | Mejor modelo (log loss, 6 folds de validación) | **Modelo final (LR de 2 variables sobre Pinnacle): 0.9653**; *baseline* (LR de 3 variables sobre cuotas) 0.9657; mercado crudo 0.9664; prior 1.0720. Frente al mercado −0.0011 [−0.0018, −0.0004], p ajustado 0.004, mismo AUC (0.684) |
 | **Test holdout (2024/25–2025/26, 5,999 partidos)** | **Modelo final: 0.9651**; mercado crudo 0.9667; Pinnacle cruda 0.9660; *baseline* (LR de 3 variables) 0.9652; prior 1.0750. Frente al consenso de 4 casas −0.0016 [−0.0027, −0.0006], p ajustado 0.004, 2/2 temporadas (la referencia más débil); frente a Pinnacle cruda −0.0009 (p ajustado 0.045, en el límite; 0.063 con otra semilla del bootstrap) y frente al *baseline* −0.0001 (sin diferencia). Casi toda la ventaja está en los 4,440 partidos con Pinnacle observada (−0.0020 vs consenso); con el respaldo de consenso (1,559 partidos, 2025/26) es −0.0004 y no se distingue de 0. Sin sobreajuste a la selección (validación 0.9653). Por liga solo Turquía es significativa (en validación, Portugal) |
-| ¿Algo supera al mercado? | No: plantilla, forma, estadísticas, 33 habilidades, HGB, MLP, XGBoost, SVM y ensemble empatan o empeoran (+0.001 a +0.028) |
+| ¿Algo supera al mercado? | No: plantilla, forma, estadísticas, 33 habilidades, HGB, MLP, XGBoost, SVM, Random Forest y ensembles empatan o empeoran (+0.001 a +0.028) |
+| Ensembles revisados (`09_pesos_ensembles.ipynb`) | Promedio sin SVM 0.9668, stacking 0.9672, Random Forest 0.9679; el promedio ponderado (pesos aprendidos en temporadas anteriores) llega a 0.9661 (+0.0003 [+0.0000, +0.0006] frente a la LR) y asigna a la LR el 83–98% del peso |
+| Pesos por muestra / remuestreo 50/50 según si la cuota acierta (`09`) | Todo empeora el log loss (+0.002 con el peso que iguala aciertos y fallos; +0.04 a +0.26 con w ≥ 2), 0/6 temporadas. Sube el acierto en sorpresas y el recall del empate (0.1% → 44% con w = 2) porque predice más empates: cambia el prior, no la información; la recalibración posterior devuelve el modelo remuestreado a +0.0010 del original |
+| El modelo sin cuotas como predictor de cuotas (`09`) | Log loss 0.9821 frente a 0.9664 del mercado (+0.0157, 0/6 temporadas), pero reproduce el 85% de la ganancia del mercado sobre el prior, correlación 0.94 con el logit de Pinnacle, 0.85 en P(empate), mismo favorito en el 89.8% |
 | Con cuotas vs sin cuotas (ganador, sin empates) | 71.6% vs 70.4% (el benchmark sin cuotas usa plantilla z + Elo + EWMA + habilidades); cuando discrepan acierta el modelo con cuotas el 56.1% (McNemar p < 0.0001); residuo R² = −0.0006 |
 | Plantilla frente a forma | Sin cuotas la plantilla mejora el log loss en 0.039; con cuotas, ≈ 0 incluso al inicio de la temporada |
 | MI vs PCA | MI gana con cuotas (6/6 folds); PCA ≥ MI sin cuotas; reducir casi no mejora a usar todas las variables (la mayor ganancia: MLP con MI-5 y cuotas, 0.0024) |
@@ -119,8 +123,8 @@ Todo el repositorio responde a una sola pregunta (¿se puede predecir 1X2 mejor 
 
 | Pregunta | Respuesta | Cuadernos |
 |---|---|---|
-| **A. ¿Qué predicen los fundamentos?** (plantilla, forma, Elo, habilidades, sin cuotas) | Algo (70.4% de acierto del ganador frente a 71.6% con cuotas), pero menos que el precio | 01–03, 04 (bloques), 06 (Paso 1) |
-| **B. ¿Qué modelo es mejor sobre las cuotas?** | Ninguno supera a una regresión logística; el modelo final es una LR de 2 variables sobre Pinnacle que **recalibra** el precio. Frente a Pinnacle cruda y al *baseline* no hay ventaja clara | 04, 05, 07, 08 |
+| **A. ¿Qué predicen los fundamentos?** (plantilla, forma, Elo, habilidades, sin cuotas) | Algo (70.4% de acierto del ganador frente a 71.6% con cuotas), pero menos que el precio | 01–03, 04 (bloques), 06 (Paso 3), 09 (Paso 4) |
+| **B. ¿Qué modelo es mejor sobre las cuotas?** | Ninguno supera a una regresión logística; el modelo final es una LR de 2 variables sobre Pinnacle que **recalibra** el precio. Frente a Pinnacle cruda y al *baseline* no hay ventaja clara; ensembles, stacking, Random Forest y pesos/remuestreo tampoco la superan | 04, 05, 07, 08, 09 |
 | **C. ¿Hay dinero?** | No se demuestra | 06 (Pasos 5–7), 08 (Paso 6 y 8) |
 
 ### Salvedades que conviene recordar
