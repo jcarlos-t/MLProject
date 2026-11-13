@@ -17,6 +17,31 @@ Equipo: José Luis Alva Espinoza, Juan Carlos Ticlia Maqui, Elmer José Manuel V
 - Cuotas **pre-cierre observadas**, no necesariamente apertura real ni capturas simultáneas. Pinnacle no se considera fiable desde el 23/07/2025; se usa el consenso de otras casas y se restringe su backtest al periodo fiable.
 - El modelo deportivo puro no recibe cuotas como variables, pesos ni entradas de calibración. Las variantes reponderadas por errores del favorito se identifican como **guiadas por mercado**.
 
+## Estructura del repositorio
+
+```text
+ML_Project/
+├── README.md                  Descripción, protocolo y cómo reproducir
+├── requirements.txt           Dependencias de Python
+├── docs/                      Documentación pública y entregables
+│   ├── informe.tex / .pdf     Informe IEEE (máx. 12 páginas)
+│   ├── presentacion/          Diapositivas HTML y PDF (10 minutos)
+│   ├── figures/               Figuras generadas para el informe
+│   ├── Data_Dictionary.md     Diccionario de variables
+│   ├── EXPERIMENTO_EMPATES.md Experimento adicional: F1 frente a accuracy en empates
+│   └── resultados_*.csv       Tablas de métricas usadas por informe y presentación
+├── scripts/
+│   ├── download/              Descarga, verificación (manifiesto) y procesamiento de datos
+│   ├── mlcore/                Código compartido: datos, modelos, métricas, experimentos e informe
+│   ├── notebooks/             Cuadernos 01–09: exploración, modelos y evaluación paso a paso
+│   ├── report/build.py        Genera figuras, informe y presentación, y verifica referencias y páginas
+│   ├── run_revision.py        Ejecuta el experimento completo (validación temporal y test)
+│   ├── experiment_draws.py    Experimento de empates
+│   ├── predict.py             Predicción de un partido con los modelos entrenados
+│   └── data/                  Datos y resultados generados (no versionados)
+└── tests/                     Pruebas de integridad temporal y del experimento de empates
+```
+
 ## Reproducción
 
 Usar Python 3.10+ y el entorno del proyecto:
