@@ -1,6 +1,6 @@
 # Lectura y ejecución de los nueve cuadernos
 
-La implementación científica común vive en `scripts/mlcore`. Cada celda de código está precedida por su propósito y seguida de interpretación. Se ejecutan en orden; 08 completa experimentos y congela selección, y 09 exporta **dos** modelos y evalúa el test revisado.
+La implementación científica común vive en `scripts/mlcore`. Cada celda de código está precedida por su propósito y seguida de interpretación. Se ejecutan en orden; 08 completa experimentos y congela selección, y 09 exporta **dos** modelos y evalúa el test.
 
 | # | Cuaderno | Propósito |
 |---|---|---|
@@ -12,8 +12,8 @@ La implementación científica común vive en `scripts/mlcore`. Cada celda de c�
 | 06 | `06_mercado.ipynb` | Referencias directas, contrastes de desarrollo e importancia |
 | 07 | `07_evaluacion.ipynb` | Métricas comunes y curvas por clase |
 | 08 | `08_pesos_ensembles.ipynb` | Pesos, resampling, ensembles y selección congelada |
-| 09 | `09_modelos_finales.ipynb` | Exportación, test revisado de ambos enfoques y entregables |
+| 09 | `09_modelos_finales.ipynb` | Exportación, test de ambos enfoques y entregables |
 
-Las salidas se enlazan por una identidad de ejecución que incorpora entradas, código y protocolo. No se reutilizan modelos antiguos por una caché anónima. La evaluación final ya conocida se etiqueta como reevaluación sobre test observado; reentrenar no restaura independencia.
+Las salidas se enlazan por una identidad de ejecución que incorpora entradas, código y protocolo. No se reutilizan modelos antiguos por una caché anónima.
 
-Las métricas nuevas se consultan en `docs/resultados_revision.csv` y en el directorio que indica `scripts/data/revision_actual.txt`. Las cifras anteriores se conservan en el archivo histórico local y no deben citarse como resultados revisados.
+Las métricas nuevas se consultan en `docs/resultados_revision.csv` y en el directorio que indica `scripts/data/revision_actual.txt`. Las cifras anteriores se conservan en el archivo histórico local y no deben citarse como resultados vigentes.

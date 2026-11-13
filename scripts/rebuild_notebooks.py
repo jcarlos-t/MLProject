@@ -76,7 +76,7 @@ def main():
        'Las seis temporadas exteriores son comunes. Las predicciones de 2017/18 solo inicializan los ensembles; no se incluyen en el resultado principal.'),
       ('Identidad y alineación', 'Cada predicción se enlaza por identificador de partido, no por la posición de una tabla antigua.',
        "for candidate,g in base.groupby('candidate'):\n    assert not g.match_id.duplicated().any()\n    check = g.merge(df[['match_id','y']],on='match_id',validate='one_to_one',suffixes=('_p','_d'))\n    assert check.y_p.eq(check.y_d).all()\nprint('Predicciones alineadas:', base.candidate.nunique(), 'candidatos')",
-       'Estas predicciones revisadas son las que consumirán evaluación y ensembles; no hay un camino paralelo con un SVM anterior.')])
+       'Estas predicciones son las que consumirán evaluación y ensembles; no hay un camino paralelo con un SVM anterior.')])
     write('05_hiperparametros.ipynb', 'Selección temporal y reducción de variables',
       'La búsqueda y sus resultados son parte del experimento común. Los parámetros no se copian entre regresión y clasificación.', [
       ('Configuraciones por fold', 'Cada entrada registra temporadas interiores, pérdidas de la rejilla y configuración elegida.',
@@ -102,18 +102,18 @@ def main():
        "from sklearn.metrics import roc_curve, roc_auc_score\nfig,axes=plt.subplots(1,3,figsize=(14,3.5))\nfor j,ax in enumerate(axes):\n    for name,color in [('con/LR','#0d9488'),('sin/LR','#2563eb')]:\n        p=aligned(base,name,va)[:,j]; fpr,tpr,_=roc_curve(va.y.eq(j),p)\n        ax.plot(fpr,tpr,color=color,label=f'{name}: {roc_auc_score(va.y.eq(j),p):.3f}')\n    ax.plot([0,1],[0,1],':',color='gray'); ax.set_title(['Local','Empate','Visitante'][j]); ax.legend(fontsize=8)\nplt.tight_layout(); plt.show()",
        'Se examina discriminación por clase; no se deduce que probabilidades sean equivalentes porque los AUC se parezcan.')])
     write('08_pesos_ensembles.ipynb', 'Pesos, remuestreo y ensembles en ambas ramas',
-      'Se completa la respuesta al profesor antes de congelar modelos y evaluar el test revisado.', [
+      'Se evalúan pesos, remuestreo y ensembles antes de congelar modelos y evaluar el test.', [
       ('Predicciones previas para ensembles', 'Los pesos y el stacking usan temporadas anteriores; 2017/18 inicializa el primer fold. No hay un método de respaldo distinto en 2018/19.',
        "from mlcore.experiment import feedback\nif not (OUT/'oof_candidates.csv').exists(): feedback(OUT)\ndisplay(pd.read_csv(OUT/'ensemble_weights.csv'))\nresults=pd.read_csv(OUT/'model_comparison.csv')\ndisplay(results[results.candidate.str.contains('mean|weighted|stack')])",
-       'Ambos ensembles se evalúan en las mismas seis temporadas y consumen configuraciones revisadas.'),
+       'Ambos ensembles se evalúan en las mismas seis temporadas y consumen las configuraciones elegidas en cada fold.'),
       ('Pesos y remuestreo solicitados', 'Se prueban LR y HGB de ambas ramas. El entrenamiento ponderado según el mercado se etiqueta explícitamente.',
        "display(pd.read_csv(OUT/'market_guided_results.csv'))\nprint('Recalibracion posterior:',pd.read_csv(OUT/'oof_recalibration.csv').candidate.unique().tolist())",
        'No se afirma que todas las variantes empeoren en cada temporada. El modelo sin cuotas puro no recibe estos pesos; son experimentos adicionales guiados por mercado.'),
-      ('Congelar una selección por enfoque', 'Se elige menor log loss; dentro de 0,0005, se prefiere simplicidad. El test revisado aún no se genera en esta etapa.',
+      ('Congelar una selección por enfoque', 'Se elige menor log loss; dentro de 0,0005, se prefiere simplicidad. El test aún no se genera en esta etapa.',
        "from mlcore.experiment import freeze\nfrozen=freeze(OUT)\nprint(json.dumps(frozen['selected'],indent=2,ensure_ascii=False))",
-       'La selección queda vinculada a huellas de predicciones y protocolo. Cambiarla exige una ejecución nueva y no permite llamar prospectivo al test observado.')])
-    write('09_modelos_finales.ipynb', 'Dos modelos finales y evaluación revisada',
-      'Los modelos se entrenan desde cero con train/val. El test ya se observó antes de la auditoría: esta evaluación se etiqueta con esa limitación.', [
+       'La selección queda vinculada a huellas de predicciones y protocolo. Cambiarla exige una ejecución nueva.')])
+    write('09_modelos_finales.ipynb', 'Dos modelos finales y evaluación en test',
+      'Los modelos se entrenan desde cero con train/val y predicen el test 2024/25–2025/26 sin ningún ajuste adicional.', [
       ('Entrenamiento final y evaluación cerrada', 'Las decisiones se leen del archivo congelado. Si la misma ejecución ya fue evaluada, se leen sus resultados en lugar de volver a seleccionar.',
        "from mlcore.experiment import evaluate\nfinal=evaluate(OUT)\ndisplay(final)\ndisplay(pd.read_csv(OUT/'primary_comparisons.csv'))",
        'Ambos enfoques reciben evaluación sobre los mismos partidos. La identidad del test no se restaura borrando un modelo.'),

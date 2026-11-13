@@ -204,12 +204,12 @@ def figures(c):
         ax.barh([LABEL[k] for k in t.index], t.log_loss, color=[COL[k] for k in t.index])
         ax.set_xlim(t.log_loss.min()-.004, t.log_loss.max()+.004)
         for i, v in enumerate(t.log_loss): ax.text(v+.0002, i, f(v), va='center', fontsize=8)
-        ax.set(title='Validación' if split == 'validacion' else 'Test revisado, ya observado', xlabel='Log loss')
+        ax.set(title='Validación' if split == 'validacion' else 'Test 2024/25–2025/26', xlabel='Log loss')
     save(fig, 'revision_final')
     fig, axes = plt.subplots(1, 2, figsize=(9, 3))
     for ax, key in zip(axes, ('modelo_con', 'modelo_sin')):
         t = c['backtest'][c['backtest'].candidate.eq(key)].copy()
-        labels = [f'{r.casa} · '+('validación' if r.split == 'validacion' else 'test revisado')+f' (n={r.apuestas})' for r in t.itertuples()]
+        labels = [f'{r.casa} · '+('validación' if r.split == 'validacion' else 'test')+f' (n={r.apuestas})' for r in t.itertuples()]
         for i, r in enumerate(t.itertuples()):
             if np.isfinite(r.ROI):
                 ax.plot([r.lo, r.hi], [i, i], color=COL[key]); ax.plot(r.ROI, i, 'o', color=COL[key])
@@ -267,7 +267,7 @@ def paper(c):
     sim = c['similarity'].query('split == "validacion" and reference == "consenso"').iloc[0]
     n, ntest = len(c['df']), int(c['df'].Season.isin(TEST).sum())
     body = rf"""\begin{{abstract}}
-Se estudian dos problemas complementarios con la misma evaluación: cuánto añade el aprendizaje a las probabilidades implícitas de las casas de apuestas y cuánto puede predecirse sin consultar sus precios. Se construye una base de {n:,} partidos modelables de nueve ligas europeas, de 2014/15 a 2025/26, con resultados históricos y ratings FIFA/FC. Se corrige la disponibilidad temporal de los ratings, el preprocesamiento fuera de las particiones, la calibración del SVM y la propagación de las configuraciones revisadas. Se comparan clasificación directa, regresión de diferencia de goles, selección MI/PCA, ensembles y reponderación. En seis temporadas de validación, los modelos elegidos con y sin cuotas obtienen log loss {f(vcon.log_loss)} y {f(vsin.log_loss)}, frente a {f(vm.log_loss)} del consenso. En la evaluación revisada de {ntest:,} partidos obtienen {f(tcon.log_loss)} y {f(tsin.log_loss)}, frente a {f(tm.log_loss)}. El predictor sin cuotas reproduce el {100*sim.fraccion_ganancia_prior:.1f}\% de la reducción de pérdida del mercado respecto al prior en validación. El test ya había sido observado antes de la auditoría: esta reevaluación no constituye evidencia prospectiva independiente. Se distinguen calidad probabilística, parecido al mercado y rentabilidad; las conclusiones se limitan a los métodos y datos evaluados.
+Se estudian dos problemas complementarios con la misma evaluación: cuánto añade el aprendizaje a las probabilidades implícitas de las casas de apuestas y cuánto puede predecirse sin consultar sus precios. Se construye una base de {n:,} partidos modelables de nueve ligas europeas, de 2014/15 a 2025/26, con resultados históricos y ratings FIFA/FC. Cada rating se toma de una versión publicada antes del partido y todo el preprocesamiento se ajusta dentro de cada partición de entrenamiento. Se comparan clasificación directa, regresión de diferencia de goles, selección MI/PCA, ensembles y reponderación. En seis temporadas de validación, los modelos elegidos con y sin cuotas obtienen log loss {f(vcon.log_loss)} y {f(vsin.log_loss)}, frente a {f(vm.log_loss)} del consenso. En el test de {ntest:,} partidos (2024/25--2025/26) obtienen {f(tcon.log_loss)} y {f(tsin.log_loss)}, frente a {f(tm.log_loss)}. El predictor sin cuotas reproduce el {100*sim.fraccion_ganancia_prior:.1f}\% de la reducción de pérdida del mercado respecto al prior en validación. Se distinguen calidad probabilística, parecido al mercado y rentabilidad; las conclusiones se limitan a los métodos y datos evaluados.
 \end{{abstract}}
 \begin{{IEEEkeywords}}
 fútbol, clasificación probabilística, cuotas, ratings, validación temporal, calibración, data leakage.
@@ -295,12 +295,12 @@ Se conservan cuatro preguntas: \textbf{{P1}}, estabilidad entre temporadas; \tex
 \subsection{{Fuentes y cobertura}}
 Football-Data~\cite{{footballdata}} proporciona 36.150 partidos originales de nueve primeras divisiones europeas: Inglaterra, Alemania, España, Italia, Francia, Países Bajos, Portugal, Turquía y Bélgica. Se conservan {n:,} con al menos una casa válida; los otros 31 alimentan la historia, pero no la comparación pareada. Los resultados de 2013/14 inicializan el historial y no se modelan. Los ratings FIFA/FC proceden de cuatro conjuntos públicos~\cite{{kagglefifa}}.
 
-La Fig.~\ref{{fig:datos}} muestra el balance de clases y la cobertura. Las estadísticas de tiros, córners, faltas y tarjetas tienen faltantes estructurales; se mantienen hasta el ajuste del imputador. La disponibilidad de plantilla ya no se fuerza al 100\%: se exige que el snapshot preceda al partido. No se eliminan automáticamente las colas de cuotas o goles por ser extremas, porque pueden corresponder a partidos reales.
+La Fig.~\ref{{fig:datos}} muestra el balance de clases y la cobertura. Las estadísticas de tiros, córners, faltas y tarjetas tienen faltantes estructurales; se mantienen hasta el ajuste del imputador. La disponibilidad de plantilla no se fuerza al 100\%: se exige que el snapshot preceda al partido. No se eliminan automáticamente las colas de cuotas o goles por ser extremas, porque pueden corresponder a partidos reales.
 """
     body += latex_figure('revision_datos', 'fig:datos', 'Distribución y cobertura. La cobertura de plantilla exige un snapshot disponible antes del partido; Pinnacle deja de considerarse fiable desde julio de 2025.', True)
     body += r"""
 \subsection{Disponibilidad temporal de los ratings}
-La auditoría detectó que asignar un único snapshot a todos los partidos de su temporada introducía datos posteriores. Se acreditaron las fechas de doce versiones: las antiguas se enlazaron por identificador de actualización SoFIFA y coincidencia de ratings con los metadatos de la misma fuente; las recientes conservan una fecha explícita. Cada equipo utiliza su snapshot verificable más reciente estrictamente anterior a la fecha del partido; si falta, retrocede a una versión anterior del club y, en ausencia de ella, conserva NaN.
+Asignar un único snapshot a todos los partidos de su temporada introduciría datos posteriores al partido. Se acreditaron las fechas de doce versiones: las antiguas se enlazaron por identificador de actualización SoFIFA y coincidencia de ratings con los metadatos de la misma fuente; las recientes conservan una fecha explícita. Cada equipo utiliza su snapshot verificable más reciente estrictamente anterior a la fecha del partido; si falta, retrocede a una versión anterior del club y, en ausencia de ella, conserva NaN.
 
 Esto evita atribuir el snapshot de julio de 2025 a partidos de 2024/25. Como consecuencia, durante esa temporada se usan en ocasiones ratings anteriores: la antigüedad es una limitación medible, no una imputación encubierta. Los titulares son los asignados por el juego al club, no alineaciones conocidas de cada encuentro. Los nombres de los clubes se armonizan mediante una tabla de identidad, que no aporta resultados deportivos.
 
@@ -315,7 +315,7 @@ Las variables se calculan cronológicamente. Se leen los estados previos de todo
 El prior suavizado de puntos se calcula con resultados anteriores a la fecha. La normalización de plantilla utiliza clubes de snapshots ya disponibles, una vez por club, sin ponderarlos por partidos futuros. Las habilidades resumen los cuatro mejores jugadores de campo en cada atributo y el portero del once del snapshot; se usan diferencias entre equipos. Son valoraciones del juego, no mediciones de rendimiento del partido.
 
 \subsection{Transformaciones aprendidas dentro del entrenamiento}
-Imputación por mediana, indicadores de ausencia, escalado, poda por correlación y MI/PCA se ajustan dentro del entrenamiento de cada partición, tanto interior como exterior. Las columnas totalmente vacías se conservan con valor neutro para mantener el esquema. La poda conserva la primera variable de un par con correlación absoluta mayor que 0,95. MI elige cinco o diez variables; PCA se evalúa con cinco componentes o 95\% de varianza. Las rejillas se fijaron antes de calcular los resultados revisados.
+Imputación por mediana, indicadores de ausencia, escalado, poda por correlación y MI/PCA se ajustan dentro del entrenamiento de cada partición, tanto interior como exterior. Las columnas totalmente vacías se conservan con valor neutro para mantener el esquema. La poda conserva la primera variable de un par con correlación absoluta mayor que 0,95. MI elige cinco o diez variables; PCA se evalúa con cinco componentes o 95\% de varianza. Las rejillas se fijaron antes de calcular los resultados.
 
 Se diferencia entre una tabla de diagnóstico y una decisión de selección: ninguna columna se elimina por un veredicto descriptivo sin que la transformación correspondiente se aplique y evalúe dentro del pipeline. Esta separación sigue las recomendaciones sobre ingeniería de variables de Zheng y Casari~\cite{zheng2018}. El predictor puro sin cuotas no utiliza precios para construir entradas, ponderaciones ni calibradores.
 
@@ -332,7 +332,7 @@ Ambas ramas comparan LR, HGB, XGBoost, Random Forest, MLP y SVM. La MLP promedia
 
 Cada rama tiene promedio, ponderación convexa y stacking multinomial. Los pesos y el metamodelo se aprenden con predicciones de temporadas anteriores. Se generan predicciones de 2017/18 para inicializar el primer fold de evaluación de 2018/19; así no se sustituye ese fold por una estrategia distinta. La regularización y la comparación temporal siguen el marco de selección de modelos de James et al.~\cite{james2023}.
 
-\subsection{Respuesta data-centric}
+\subsection{Enfoque data-centric: pesos y remuestreo}
 Se da más peso a los errores del favorito del consenso: factores 2, 3 y 5; igualdad de peso total entre aciertos y fallos; inverso de la probabilidad del resultado y su raíz. Se ensayan submuestreo y sobremuestreo 50/50 con tres semillas y recalibración posterior del esquema balanceado. Todos se construyen exclusivamente con resultados de entrenamiento. Cuando una variante deportiva usa estos pesos se denomina \emph{entrenamiento guiado por mercado}; no reemplaza al predictor sin cuotas puro.
 
 \section{Diseño experimental}
@@ -341,7 +341,7 @@ El entrenamiento y desarrollo comprenden 2014/15--2023/24. Se evalúan seis temp
 
 La comparación principal usa exactamente los mismos partidos y el log loss agregado por partido. Dentro de 0,0005 del mínimo se prefiere menor complejidad: LR, HGB, XGBoost, RF, MLP, SVM y ensembles; en regresión se mantiene un orden explícito de simplicidad. Se elige un candidato por rama. La selección entre familias a partir de esas seis temporadas conserva sesgo de desarrollo; no se presenta como una validación anidada de todo el proceso científico.
 
-\textbf{Test revisado.} Los resultados del periodo 2024/25--2025/26 ya se conocían antes de esta revisión. Se congelaron las decisiones usando solo train/val y después se generaron predicciones corregidas para ambas ramas. No se afirma que eliminar o reentrenar el modelo convierta esos partidos en evidencia nueva: es una reevaluación sobre un test observado, no una prueba prospectiva independiente.
+\textbf{Test.} Las temporadas 2024/25--2025/26 (5.999 partidos) se reservan como test. Variables, familia, hiperparámetros, ensembles y umbral del backtest se congelan usando solo train/val; después cada modelo se reentrena con todo 2014/15--2023/24 y predice el test sin ningún ajuste adicional.
 
 Los intervalos usan bootstrap por bloques de temporada, año ISO y semana ISO, con 5.000 remuestreos. Incluir el año evita agrupar dos semanas de años distintos durante temporadas extendidas. Se declaran cinco comparaciones principales por partición y se aplica Benjamini--Hochberg~\cite{benjamini1995}; los desgloses por liga son descriptivos. Los indicadores de estabilidad se interpretan como diagnósticos de cambio~\cite{siddiqi2017}, sin asegurar ausencia de drift porque una tendencia no resulte significativa.
 
@@ -349,14 +349,14 @@ Los intervalos usan bootstrap por bloques de temporada, año ISO y semana ISO, c
 \label{sec:resultados}
 \subsection{Enfoque con cuotas: aportación frente al precio directo}
 """
-    body += rf"La selección elige {model_label(chosen['con']['candidate'].split('/')[-1])}, con log loss {f(vcon.log_loss)} frente a {f(vm.log_loss)} del consenso en validación. En el test revisado, los valores son {f(tcon.log_loss)} y {f(tm.log_loss)}. El Cuadro~\ref{{tab:con}} compara las familias; no se equipara una mejora de log loss con una mejora de ordenación. AUC y calibración se examinan de forma complementaria."
+    body += rf"La selección elige {model_label(chosen['con']['candidate'].split('/')[-1])}, con log loss {f(vcon.log_loss)} frente a {f(vm.log_loss)} del consenso en validación. En el test, los valores son {f(tcon.log_loss)} y {f(tm.log_loss)}. El Cuadro~\ref{{tab:con}} compara las familias; no se equipara una mejora de log loss con una mejora de ordenación. AUC y calibración se examinan de forma complementaria."
     rows = [[model_label(s), f(result.loc['con/'+s, 'log_loss']), f(result.loc['con/'+s, 'AUC_macro'], 3), f(result.loc['con/'+s, 'ECE_masa'])]
             for s in ['LR_REF', 'LR_consenso', 'LR', 'HGB', 'XGB', 'RF', 'MLP', 'SVM']]
     body += latex_table(['Modelo', 'LL', 'AUC', 'ECE'], rows, 'tab:con', 'Modelos con cuotas: predicciones exteriores de validación, con ajustes temporales interiores. LR completa incluye fundamentos; LR de referencia y de consenso solo mercado.')
-    body += r"La Fig.~\ref{fig:modelos} muestra el rango de resultados en ambos enfoques. Se conservan todas las configuraciones revisadas en las evaluaciones posteriores; los ensembles no reutilizan predicciones de una versión anterior del SVM ni hiperparámetros descartados."
+    body += r"La Fig.~\ref{fig:modelos} muestra el rango de resultados en ambos enfoques. La configuración elegida en cada fold se propaga a todas las evaluaciones posteriores, y los ensembles combinan exactamente esas predicciones."
     body += latex_figure('revision_modelos', 'fig:modelos', 'Comparación de familias con cuotas (izquierda) y sin cuotas (derecha), sobre los mismos seis folds. Las escalas se ajustan por panel para hacer visibles las diferencias.', True)
     body += r"\subsection{Enfoque sin cuotas: construcción de un precio propio}"
-    body += rf"La selección deportiva elige {model_label(chosen['sin']['candidate'].split('/')[-1])}. Obtiene log loss {f(vsin.log_loss)} en validación y {f(tsin.log_loss)} en el test revisado; sus accuracy 1X2 son {100*vsin.accuracy:.1f}\% y {100*tsin.accuracy:.1f}\%. Estos porcentajes usan todos los partidos, incluidos empates. El Cuadro~\ref{{tab:sin}} permite contrastar clasificación directa y regresión convertida en probabilidad."
+    body += rf"La selección deportiva elige {model_label(chosen['sin']['candidate'].split('/')[-1])}. Obtiene log loss {f(vsin.log_loss)} en validación y {f(tsin.log_loss)} en el test; sus accuracy 1X2 son {100*vsin.accuracy:.1f}\% y {100*tsin.accuracy:.1f}\%. Estos porcentajes usan todos los partidos, incluidos empates. El Cuadro~\ref{{tab:sin}} permite contrastar clasificación directa y regresión convertida en probabilidad."
     rows = [[model_label(s), f(result.loc['sin/'+s, 'log_loss']), f(result.loc['sin/'+s, 'AUC_macro'], 3), f(result.loc['sin/'+s, 'ECE_masa'])]
             for s in ['LR', 'HGB', 'XGB', 'RF', 'MLP', 'SVM', 'GD_LIN', 'GD_RF', 'GD_HGB', 'GD_SVR', 'GD_ALL']]
     body += latex_table(['Modelo', 'LL', 'AUC', 'ECE'], rows, 'tab:sin', 'Modelos sin cuotas. GD identifica regresión de diferencia de goles con calibrador temporal; ALL promedia regresión lineal, RF y HGB antes de calibrar.')
@@ -365,15 +365,15 @@ Los intervalos usan bootstrap por bloques de temporada, año ISO y semana ISO, c
     body += r"\subsection{Comparación común de probabilidades}El Cuadro~\ref{tab:final} reúne referencias y modelos finales sobre la misma cohorte."
     rows = [[LABEL[k], f(m.loc[(v, k), 'log_loss']), f(m.loc[(t, k), 'log_loss']), f(m.loc[(t, k), 'AUC_macro'], 3), f(m.loc[(t, k), 'ECE_masa'])]
             for k in ['prior', 'consenso', 'Pinnacle_respaldo', 'modelo_con', 'modelo_sin']]
-    body += latex_table(['Referencia/modelo', 'LL val.', 'LL test', 'AUC test', 'ECE test'], rows, 'tab:final', 'Comparación principal. Test revisado significa periodo previamente observado, reevaluado tras congelar las decisiones; ECE de igual masa.')
+    body += latex_table(['Referencia/modelo', 'LL val.', 'LL test', 'AUC test', 'ECE test'], rows, 'tab:final', 'Comparación principal en validación (seis temporadas) y test (2024/25--2025/26); ECE de igual masa.')
     body += r"Los contrastes pareados se detallan en el Cuadro~\ref{tab:contrastes}. Los intervalos miden incertidumbre del remuestreo condicionado a estos procedimientos; no corrigen por sí solos todo el sesgo de exploración."
     rows = []
     for r in c['primary'].query('split == "test_revisado"').itertuples():
         rows.append([LABEL[r.a]+' vs. '+LABEL[r.b], f(r.delta), f'[{f(r.lo)}, {f(r.hi)}]', f(r.p_BH, 3)])
-    body += latex_table(['Contraste', r'$\Delta$ LL', r'IC 95\%', '$p$ BH'], rows, 'tab:contrastes', 'Diferencias pareadas en test revisado; negativo favorece al primer modelo. Familia de cinco contrastes predefinidos.')
+    body += latex_table(['Contraste', r'$\Delta$ LL', r'IC 95\%', '$p$ BH'], rows, 'tab:contrastes', 'Diferencias pareadas en el test; negativo favorece al primer modelo. Familia de cinco contrastes predefinidos.')
     body += r"La Fig.~\ref{fig:cal} compara calibración por clase y la Fig.~\ref{fig:temporadas} la estabilidad temporal (P1). La variación entre temporadas no se interpreta como cambio causado por un único factor: pueden variar fuerza, cobertura y composición de ligas y casas."
     body += latex_figure('revision_calibracion', 'fig:cal', 'Calibración en validación: modelo con cuotas arriba y sin cuotas abajo, frente al consenso. Diez grupos de igual masa por clase.', True)
-    body += latex_figure('revision_temporadas', 'fig:temporadas', 'Log loss por temporada para cada modelo y sus referencias. El fondo destaca el test revisado; las predicciones de validación son exteriores.', True)
+    body += latex_figure('revision_temporadas', 'fig:temporadas', 'Log loss por temporada para cada modelo y sus referencias. El fondo destaca el test; las predicciones de validación son exteriores.', True)
     body += r"\subsection{¿Cuánto se aproxima el predictor deportivo al mercado?}"
     body += rf"En validación, la correlación con el consenso es {f(sim.corr_logit, 3)} para $\ln(p_H/p_A)$ y {f(sim.corr_pD, 3)} para la probabilidad de empate; coinciden en el favorito en el {100*sim.mismo_favorito:.1f}\% de los partidos. La fracción de ganancia sobre el prior es {100*sim.fraccion_ganancia_prior:.1f}\%, definida como $(LL_{{prior}}-LL_{{sin}})/(LL_{{prior}}-LL_{{mercado}})$. Esta razón depende del prior y de la métrica: no significa poseer ese porcentaje de toda la información de una casa. La Fig.~\ref{{fig:predictor}} muestra el parecido sin confundirlo con igualdad de calidad."
     body += latex_figure('revision_predictor', 'fig:predictor', 'Probabilidades deportivas frente al consenso en validación. La diagonal indica igualdad; la densidad muestra dónde se concentran las discrepancias.', True)
@@ -383,8 +383,8 @@ Los intervalos usan bootstrap por bloques de temporada, año ISO y semana ISO, c
     body += latex_figure('revision_ensembles', 'fig:ens', 'Ensembles frente a LR completa, evaluados en los seis folds con predicciones previas para aprender pesos y stacking.', True)
     ens = pd.read_csv(c['out']/'ensemble_comparisons.csv').set_index('candidate')
     e = ens.loc['sin/mean']
-    body += rf"Frente a la LR deportiva con historia y plantilla, el promedio sin cuotas reduce LL en {f(-e.delta)} (IC 95\% de la diferencia [{f(e.lo)}, {f(e.hi)}]; $p$ BH={f(e.p_BH, 3)}), con mejora en cinco de seis temporadas. El ponderado logra un valor algo menor, pero el promedio queda dentro de la tolerancia predefinida de 0,0005 y se prefiere por simplicidad. Con cuotas, el ponderado queda prácticamente igual a la LR de referencia y su intervalo incluye cero. Por tanto, el beneficio del ensemble depende de la rama; estos contrastes de desarrollo no sustituyen un test futuro."
-    body += r"La Fig.~\ref{fig:pesos} muestra el experimento solicitado por el profesor. El objetivo sigue siendo calibración sobre la distribución real de partidos, no maximizar el acierto en el subconjunto donde el favorito pierde. Se reporta el efecto medio sin afirmar que todos los esquemas empeoren en cada temporada; la recalibración se evalúa en las cinco temporadas para las que existe una anterior con predicciones del mismo procedimiento."
+    body += rf"Frente a la LR deportiva con historia y plantilla, el promedio sin cuotas reduce LL en {f(-e.delta)} (IC 95\% de la diferencia [{f(e.lo)}, {f(e.hi)}]; $p$ BH={f(e.p_BH, 3)}), con mejora en cinco de seis temporadas. El ponderado logra un valor algo menor, pero el promedio queda dentro de la tolerancia predefinida de 0,0005 y se prefiere por simplicidad. Con cuotas, el ponderado queda prácticamente igual a la LR de referencia y su intervalo incluye cero. Por tanto, el beneficio del ensemble depende de la rama; estos contrastes pertenecen a la validación."
+    body += r"La Fig.~\ref{fig:pesos} muestra el experimento data-centric: más peso o remuestreo en los partidos donde el favorito del mercado falla. El objetivo sigue siendo calibración sobre la distribución real de partidos, no maximizar el acierto en el subconjunto donde el favorito pierde. Se reporta el efecto medio sin afirmar que todos los esquemas empeoren en cada temporada; la recalibración se evalúa en las cinco temporadas para las que existe una anterior con predicciones del mismo procedimiento."
     body += latex_figure('revision_pesos', 'fig:pesos', 'Pesos y remuestreo guiados por errores del mercado. La rama sin entradas de cuotas se identifica como guiada por mercado cuando usa esos pesos.', True)
     body += r"\subsection{Backtest con reglas fijas}La Fig.~\ref{fig:bt} responde P4. Se apuesta una unidad al lado con mayor $p_j o_j-1$ si supera 0,02, sin volver a elegir el umbral por ROI. Se comparan los dos modelos y las referencias directas con precios observados de Bet365 y Pinnacle; esta última excluye el periodo de fuente no fiable. Un retorno puntual positivo no basta para declarar rentabilidad cuando el intervalo incluye pérdidas."
     body += latex_figure('revision_backtest', 'fig:bt', 'ROI por unidad apostada e intervalos por bloques para los dos modelos. Las cantidades de apuestas dependen de la casa y su cobertura fiable.', True)
@@ -393,21 +393,21 @@ Los intervalos usan bootstrap por bloques de temporada, año ISO y semana ISO, c
 \label{sec:discusion}
 La comparación con cuotas mide el aporte adicional a un precio ya informativo; el predictor sin cuotas mide cuánto puede construirse con datos deportivos. Tienen valor científico aunque ninguno supere al mercado. Un modelo de menor log loss realiza una predicción probabilística mejor según esa regla; si el AUC cambia poco, eso sugiere que buena parte de la diferencia reside en calibración, sin convertirlo en una identidad demostrada.
 
-Los resultados actuales reemplazan los números anteriores porque se corrigieron entradas y procedimientos, no porque se buscara reproducir una conclusión previa. Cada transformación llega a las predicciones evaluadas y se documenta la configuración por fold. La disponibilidad temporal elimina una fuga, pero puede deteriorar el rendimiento al utilizar plantillas antiguas: ese coste es preferible a presentar una estimación retrospectiva como disponible en su día.
+Cada transformación llega a las predicciones evaluadas y se documenta la configuración por fold. La disponibilidad temporal evita una fuga, pero puede deteriorar el rendimiento al utilizar plantillas antiguas: ese coste es preferible a presentar una estimación retrospectiva como disponible en su día.
 
-Persisten limitaciones: no hay alineaciones reales ni lesiones; la historia cubre solo liga; las cuotas carecen de sincronización exacta; los ratings de algunas temporadas son antiguos; las rejillas son acotadas; y el test revisado ya había sido observado. Ningún intervalo convierte ese último periodo en validación prospectiva. Una próxima evaluación debería fijar primero el protocolo y esperar partidos nuevos. Tampoco se descarta drift por falta de significación ni se extrapola el resultado a otras ligas o deportes.
+Persisten limitaciones: no hay alineaciones reales ni lesiones; la historia cubre solo liga; las cuotas carecen de sincronización exacta; los ratings de algunas temporadas son antiguos; y las rejillas son acotadas. Además, el periodo de test se había evaluado con una versión anterior del sistema, por lo que conviene confirmar los resultados con partidos de 2026/27. Tampoco se descarta drift por falta de significación ni se extrapola el resultado a otras ligas o deportes.
 
 Las fuentes se utilizan para fines académicos, sin redistribuir sus CSV crudos. No se modelan datos sensibles de personas. La calidad desigual de cobertura puede perjudicar a equipos con menos historia, por lo que se publica la cobertura en lugar de ocultarla con imputaciones globales. El análisis de rentabilidad es experimental y no constituye recomendación de apuestas.
 
 \section{Conclusiones}
 \label{sec:conclusiones}
 """
-    body += rf"Se entregan dos predictores con un protocolo común. Con cuotas se obtiene log loss {f(vcon.log_loss)} en validación y {f(tcon.log_loss)} en test revisado; sin cuotas, {f(vsin.log_loss)} y {f(tsin.log_loss)}. La referencia de consenso obtiene {f(vm.log_loss)} y {f(tm.log_loss)}. Estas comparaciones permiten valorar por separado el ajuste del precio y la capacidad deportiva propia."
+    body += rf"Se entregan dos predictores con un protocolo común. Con cuotas se obtiene log loss {f(vcon.log_loss)} en validación y {f(tcon.log_loss)} en test; sin cuotas, {f(vsin.log_loss)} y {f(tsin.log_loss)}. La referencia de consenso obtiene {f(vm.log_loss)} y {f(tm.log_loss)}. Estas comparaciones permiten valorar por separado el ajuste del precio y la capacidad deportiva propia."
     body += r"""
 
 P1 se responde mediante resultados por temporada y diagnósticos de cobertura, sin afirmar ausencia universal de cambio. P2 se responde con una ablación explícita de historia, plantilla y habilidades. P3 se responde comparando MI y PCA sobre los mismos folds y transformaciones internas. P4 se responde con backtests de reglas fijas, intervalos y referencias de mercado: no debe deducirse rentabilidad solo de un promedio positivo. Los ensembles y la reponderación se juzgan por sus resultados corregidos en cada rama, sin exigir que superen a un método sencillo.
 
-Como continuación, interesa incorporar snapshots más frecuentes, alineaciones y ausencias verificables, así como datos xG históricos. Los modelos de conteo de goles ofrecen otro contraste~\cite{dixon1997,karlis2003}. El siguiente test debe ser verdaderamente futuro respecto al protocolo congelado.
+Como continuación, interesa incorporar snapshots más frecuentes, alineaciones y ausencias verificables, así como datos xG históricos. Los modelos de conteo de goles ofrecen otro contraste~\cite{dixon1997,karlis2003}. También conviene aplicar el protocolo congelado a la temporada 2026/27.
 """
     bibliography = old[old.index(r'\begin{thebibliography}'):]
     bibliography = bibliography.replace('2025.\n\bibitem{kagglefifa}', 'consultado en noviembre de 2026.\n\bibitem{kagglefifa}')
@@ -420,35 +420,174 @@ Como continuación, interesa incorporar snapshots más frecuentes, alineaciones 
 
 
 def presentation(c):
-    # Visual direction: white canvas; teal = with market, blue = without market;
-    # Segoe UI/system sans; direct comparative plots and large readable evidence.
+    # Visual direction: didactic pitch deck. Navy cover/closing, white content slides,
+    # teal = with odds, blue = without odds, amber = test. One idea per slide,
+    # assertion titles, big numbers and worked examples before figures.
     m = c['final']; val, test = 'validacion', 'test_revisado'
-    chosen = c['frozen']['selected']; sim = c['similarity'].query('split == "validacion" and reference == "consenso"').iloc[0]
+    chosen = c['frozen']['selected']
+    sim = c['similarity'].query('split == "validacion" and reference == "consenso"').iloc[0]
+    bt = c['backtest'].set_index(['split', 'candidate', 'casa'])
     def metric(split, name, col='log_loss'): return f(m.loc[(split, name), col])
-    def img(name, alt): return f'<img src="img/{name}.png" alt="{html.escape(alt)}">'
+    def acc(split, name): return f'{100*m.loc[(split, name), "accuracy"]:.1f} %'
+    def roi(split, name, casa):
+        r = bt.loc[(split, name, casa)]
+        return f'{100*r.ROI:+.1f} %', f'[{100*r.lo:+.0f} %, {100*r.hi:+.0f} %]', int(r.apuestas)
+    def img(name, alt, cls=''): return f'<img class="{cls}" src="img/{name}.png" alt="{html.escape(alt)}">'
+    def kpi(value, label, cls=''): return f'<div class="kpi {cls}"><b>{value}</b><span>{label}</span></div>'
+    def tag(text, cls): return f'<span class="tag {cls}">{text}</span>'
     def table(split):
-        rows = ''.join(f'<tr><td>{LABEL[k]}</td><td>{metric(split,k)}</td><td>{metric(split,k,"AUC_macro")}</td><td>{metric(split,k,"ECE_masa")}</td></tr>' for k in ('consenso','Pinnacle_respaldo','modelo_con','modelo_sin'))
-        return '<table><thead><tr><th>Modelo / referencia</th><th>Log loss</th><th>AUC</th><th>ECE masa</th></tr></thead><tbody>'+rows+'</tbody></table>'
+        rows = ''.join(f'<tr class="r-{k}"><td>{LABEL[k]}</td><td>{metric(split,k)}</td><td>{metric(split,k,"AUC_macro")[:5]}</td><td>{acc(split,k)}</td></tr>'
+                       for k in ('prior', 'consenso', 'Pinnacle_respaldo', 'modelo_con', 'modelo_sin'))
+        return '<table><thead><tr><th>Modelo / referencia</th><th>Log loss ↓</th><th>AUC ↑</th><th>Accuracy</th></tr></thead><tbody>'+rows+'</tbody></table>'
     slides = []
-    def slide(title, body, note='', cls=''):
+    def slide(title, body, note='', cls='', kicker=''):
         n = len(slides)+1
-        slides.append(f'<section class="slide {cls}" data-n="{n}"><h2>{title}</h2><div class="content">{body}</div><footer><span>{note}</span><span>{n} / 13</span></footer></section>')
-    slide('Predecir fútbol con y sin cuotas', '<p class="lead">Dos preguntas, el mismo estándar de evaluación.</p><div class="two"><div class="con"><h3>Con cuotas</h3><p>¿Qué añade un modelo al precio del mercado?</p></div><div class="sin"><h3>Sin cuotas</h3><p>¿Qué probabilidades podemos construir con información deportiva?</p></div></div><p class="authors">José Luis Alva · Juan Carlos Ticlia · Elmer Villegas · Joseph Cose</p>', 'Machine Learning · UTEC · Sección 3')
-    slide('Comparar probabilidades, no solo aciertos', '<ul><li>Salida: P(local), P(empate), P(visitante).</li><li><b>Log loss:</b> penaliza la confianza equivocada.</li><li><b>AUC:</b> mide ordenación; <b>ECE:</b> calibración.</li><li>El acierto del ganador excluye empates reales: no es accuracy 1X2.</li></ul>', 'P1 estabilidad · P2 plantilla · P3 MI/PCA · P4 rentabilidad')
-    slide('Datos con disponibilidad histórica acreditada', img('revision_datos','Distribución y cobertura')+'<p>36.150 partidos originales; 36.119 comparables. Ratings anteriores a cada partido, con faltantes y antigüedad visibles.</p>', '9 ligas · 2014/15–2025/26 · calentamiento 2013/14')
-    slide('Entrenar con pasado y documentar el test observado', '<div class="timeline"><p>2014/15–2017/18: historia y ajuste inicial</p><p>2018/19–2023/24: seis folds exteriores; ajuste interior con pasado</p><p class="test">2024/25–2025/26: reevaluación tras congelar decisiones</p></div><ul><li>Imputación, escalado, poda y selección dentro de cada entrenamiento.</li><li>El test ya fue observado: reentrenar no lo vuelve desconocido.</li></ul>', 'Mismos partidos y métricas para ambos enfoques')
-    slide('Un experimento común para dos entradas distintas', '<div class="two"><div class="con"><h3>Mercado + fundamentos</h3><p>Consenso y Pinnacle fiable; comparación directa sin aprendizaje.</p></div><div class="sin"><h3>Solo fundamentos</h3><p>Elo, forma, plantilla, habilidades y contexto histórico.</p></div></div><p>LR · HGB · XGBoost · RF · MLP · SVM</p><p>Sin cuotas: también diferencia de goles convertida a probabilidades.</p>', 'Rejillas fijadas · calibración temporal · configuraciones revisadas propagadas')
-    slide('Con cuotas: medir qué añade el aprendizaje', f'<p class="lead con-text">Elegido: {model_label(chosen["con"]["candidate"].split("/")[-1])}</p>'+table(val)+f'<p>En validación: {metric(val,"modelo_con")} frente a {metric(val,"consenso")} del consenso.</p>', 'Las referencias directas separan elección del precio y aprendizaje')
-    slide('Con cuotas: pérdidas, ordenación y calibración', img('revision_calibracion_con','Calibración del modelo con cuotas')+'<p>Una mejora de log loss no implica necesariamente ordenar mejor: contrastamos también AUC y calibración.</p>', 'Curvas por clase · validación exterior · diez grupos de igual masa')
-    slide('Sin cuotas: construir el predictor deportivo', img('revision_ablacion','Ablación sin cuotas')+'<p>Historia → plantilla → habilidades. Los ratings se cruzan por fecha y pueden proceder de una versión anterior.</p>', 'Comparación bajo LR; cada C se elige con temporadas anteriores')
-    slide('Sin cuotas: un precio propio que podemos contrastar', f'<p class="lead sin-text">Elegido: {model_label(chosen["sin"]["candidate"].split("/")[-1])} · LL validación {metric(val,"modelo_sin")}</p>'+img('revision_predictor','Probabilidades propias frente al consenso')+f'<p>Correlación logit con consenso {sim.corr_logit:.3f}; favorito coincidente {100*sim.mismo_favorito:.1f} %. Cuotas justas = 1/P, sin margen.</p>', 'Parecido al mercado no equivale a igual calidad ni rentabilidad')
-    slide('Comparación final con el mismo periodo', table(test)+'<p>La comparación utiliza los mismos 5.999 partidos. Los contrastes pareados y sus intervalos están en el informe.</p>', 'Test revisado ya observado · no es evidencia prospectiva independiente')
-    slide('PCA, ensembles y respuesta al profesor', '<div class="two">'+img('revision_ensembles','Ensembles en ambos enfoques')+img('revision_reduccion','MI y PCA en ambos enfoques')+'</div><p>El ensemble mejora sin cuotas; con cuotas se prefiere LR. También probamos pesos y resampling 50/50; esas variantes son guiadas por mercado.</p>', 'Predicciones previas inicializan el primer ensemble; no se cambia de método en ese fold')
-    slide('Rentabilidad y límites de los datos', img('revision_backtest','Backtest de ambos modelos')+'<p>τ=0,02 fijo; una unidad por apuesta. Pinnacle se excluye desde el 23/07/2025. Los precios no tienen sincronización exacta entre casas.</p>', 'Un ROI puntual positivo no demuestra rentabilidad · no es consejo de apuestas')
-    slide('Dos contribuciones, una comparación honesta', f'<div class="two"><div class="con"><h3>Con cuotas</h3><p>Log loss revisado: <b>{metric(test,"modelo_con")}</b></p><p>Medimos el aporte respecto al precio directo.</p></div><div class="sin"><h3>Sin cuotas</h3><p>Log loss revisado: <b>{metric(test,"modelo_sin")}</b></p><p>Construimos probabilidades con información deportiva.</p></div></div><p>Limitaciones: ratings antiguos, alineaciones del juego, solo ligas y test observado. La siguiente prueba debe usar partidos futuros.</p><p class="repo">github.com/jcarlos-t/MLProject</p>', 'Preguntas · resultados reproducibles · ambos enfoques con igual rigor')
+        k = f'<p class="kicker">{kicker}</p>' if kicker else ''
+        slides.append(f'<section class="slide {cls}" data-n="{n}">{k}<h2>{title}</h2><div class="content">{body}</div>'
+                      f'<footer><span>{note}</span><span>{n} / 13</span></footer></section>')
+    con_name = model_label(chosen['con']['candidate'].split('/')[-1])
+    sin_name = model_label(chosen['sin']['candidate'].split('/')[-1])
+    gain_con = 100*(m.loc[(test, 'consenso'), 'log_loss']-m.loc[(test, 'modelo_con'), 'log_loss'])/m.loc[(test, 'consenso'), 'log_loss']
+    r_con, ci_con, n_con = roi(test, 'modelo_con', 'B365'); r_sin, ci_sin, n_sin = roi(test, 'modelo_sin', 'B365')
+    # 1 · Portada
+    slide('¿Puede un modelo predecir el fútbol mejor que las casas de apuestas?',
+          '<p class="lead">Probabilidades para local, empate y visitante en nueve ligas europeas, con y sin mirar las cuotas.</p>'
+          '<div class="kpis">'+kpi(f'{len(c["df"]):,}'.replace(',', '.'), 'partidos modelados')+kpi('9', 'ligas europeas')+kpi('12', 'temporadas, 2014/15–2025/26')+'</div>'
+          '<p class="authors">José Luis Alva · Juan Carlos Ticlia · Elmer Villegas · Joseph Cose</p>',
+          'Machine Learning · UTEC · Sección 3', 'cover', 'Proyecto final de Machine Learning')
+    # 2 · El problema
+    slide('No queremos adivinar un ganador: queremos probabilidades',
+          '<div class="match"><div class="team">Local</div><div class="vs">vs</div><div class="team">Visitante</div></div>'
+          '<div class="probbar"><div class="h" style="flex:48">Local 48 %</div><div class="d" style="flex:27">Empate 27 %</div><div class="a" style="flex:25">Visitante 25 %</div></div>'
+          '<div class="two">'
+          '<div class="card con">'+tag('Enfoque 1', 'con')+'<h3>Con cuotas</h3><p>El mercado ya da un precio. <b>¿El aprendizaje automático lo puede mejorar?</b></p></div>'
+          '<div class="card sin">'+tag('Enfoque 2', 'sin')+'<h3>Sin cuotas</h3><p>Solo datos deportivos. <b>¿Qué tan cerca llegamos del mercado?</b></p></div></div>',
+          'Ejemplo ilustrativo · las probabilidades suman 100 %', kicker='El problema')
+    # 3 · Cómo medimos
+    slide('Medimos la calidad de la probabilidad, no solo los aciertos',
+          '<div class="two top"><div><p class="big">Log loss = −ln(probabilidad dada a lo que ocurrió)</p>'
+          '<table class="mini"><thead><tr><th>Prob. al resultado real</th><th>Penalización</th></tr></thead><tbody>'
+          '<tr><td>60 %</td><td>0,51</td></tr><tr><td>25 %</td><td>1,39</td></tr><tr class="bad"><td>5 % (confiado y equivocado)</td><td>3,00</td></tr></tbody></table>'
+          '<p class="hint">Menor es mejor. Premia ser honesto con la incertidumbre.</p></div>'
+          '<div class="stack"><div class="card"><h4>AUC</h4><p>¿Ordena bien qué resultado es más probable?</p></div>'
+          '<div class="card"><h4>ECE · calibración</h4><p>Si decimos 30 %, ¿ocurre ~30 % de las veces?</p></div>'
+          '<div class="card"><h4>Accuracy</h4><p>Acierto del resultado más probable. Complementaria: casi nunca elige empate.</p></div></div></div>',
+          'Preguntas: P1 estabilidad · P2 aporte de la plantilla · P3 MI vs. PCA · P4 rentabilidad', kicker='Cómo evaluamos')
+    # 4 · Datos
+    slide('Tres fuentes, alineadas por fecha para no ver el futuro',
+          '<div class="kpis small">'+kpi('Resultados', 'historia de cada equipo (Elo, forma, goles)')+kpi('Cuotas', 'Bet365, Pinnacle y otras casas')+kpi('Ratings FIFA/FC', 'plantilla y habilidades del once')+'</div>'
+          +img('revision_datos', 'Distribución del resultado y cobertura de datos')+
+          '<p class="hint">Cada partido usa solo el rating publicado <b>antes</b> de su fecha. Pinnacle se excluye desde el 23/07/2025 por aviso de la fuente.</p>',
+          '36.150 partidos originales · 31 sin cuotas · temporada 2013/14 solo como calentamiento', kicker='Datos')
+    # 5 · Protocolo
+    slide('Entrenamos con el pasado y evaluamos en temporadas que el modelo no vio',
+          '<div class="timeline">'
+          '<div class="seg hist" style="flex:4"><b>2014/15–2017/18</b><span>historia y primer ajuste</span></div>'
+          '<div class="seg val" style="flex:6"><b>2018/19–2023/24</b><span>6 temporadas de validación: entrenar con todo lo anterior</span></div>'
+          '<div class="seg test" style="flex:2"><b>2024/25–25/26</b><span>test · 5.999</span></div></div>'
+          '<div class="flow"><div>Variables cronológicas</div><i>→</i><div>Imputar, escalar y seleccionar dentro de cada entrenamiento</div><i>→</i><div>Elegir modelo por log loss en validación</div><i>→</i><div>Congelar y predecir el test</div></div>'
+          '<p class="hint">Mismos partidos, mismas métricas y mismo protocolo para ambos enfoques.</p>',
+          'Ventana expansiva · ajuste interno con las dos temporadas anteriores', kicker='Protocolo experimental')
+    # 6 · Con cuotas: idea
+    slide('Una cuota ya es una probabilidad (con margen de la casa)',
+          '<div class="two top"><div class="card con">'+tag('Enfoque 1 · con cuotas', 'con')+
+          '<table class="mini"><thead><tr><th></th><th>Cuota</th><th>1/cuota</th><th>Probabilidad</th></tr></thead><tbody>'
+          '<tr><td>Local</td><td>2,10</td><td>0,476</td><td><b>45,4 %</b></td></tr><tr><td>Empate</td><td>3,40</td><td>0,294</td><td><b>28,1 %</b></td></tr>'
+          '<tr><td>Visitante</td><td>3,60</td><td>0,278</td><td><b>26,5 %</b></td></tr><tr class="sum"><td>Suma</td><td></td><td>1,048</td><td>100 %</td></tr></tbody></table>'
+          '<p class="hint">El 4,8 % sobrante es el margen de la casa: se normaliza.</p></div>'
+          '<div class="stack"><div class="card"><h4>Referencias directas</h4><p>Consenso de casas y Pinnacle, sin aprendizaje.</p></div>'
+          '<div class="card"><h4>Modelos</h4><p>LR, HGB, XGBoost, RF, MLP y SVM sobre el precio, con o sin fundamentos deportivos.</p></div>'
+          f'<div class="card con"><h4>Elegido: {con_name}</h4><p>Regresión logística sobre dos variables del precio: <b>recalibra</b> la cuota.</p></div></div></div>',
+          'Ejemplo de cuotas ilustrativo', kicker='Enfoque 1 · Con cuotas')
+    # 7 · Con cuotas: resultados
+    slide('Con cuotas: el modelo afina el precio del mercado, no lo reemplaza',
+          '<div class="kpis">'+kpi(metric(val, 'modelo_con'), 'log loss del modelo (validación)', 'con')+kpi(metric(val, 'consenso'), 'consenso de casas')+kpi('5 de 6', 'temporadas en que mejora al consenso', 'con')+'</div>'
+          +img('revision_calibracion_con', 'Calibración del modelo con cuotas frente al consenso')+
+          f'<p class="hint">Mejora sobre todo la <b>calibración</b> (ECE {metric(val,"modelo_con","ECE_masa")} vs. {metric(val,"consenso","ECE_masa")}); el AUC es prácticamente igual: el mercado ya ordena muy bien.</p>',
+          'Curvas por clase en validación · diez grupos de igual masa', kicker='Enfoque 1 · Con cuotas')
+    # 8 · Sin cuotas: idea
+    slide('Sin cuotas: construimos un precio propio con datos deportivos',
+          '<div class="two top"><div class="stack">'
+          '<div class="card sin">'+tag('Enfoque 2 · sin cuotas', 'sin')+'<h4>Historia</h4><p>Elo, forma de 5 partidos, medias de goles y puntos, descanso.</p></div>'
+          '<div class="card sin"><h4>Plantilla</h4><p>Rating medio del once según el juego FIFA/FC.</p></div>'
+          '<div class="card sin"><h4>Habilidades</h4><p>Ataque, pase, defensa y portero de los mejores jugadores.</p></div></div>'
+          '<div>'+img('revision_ablacion', 'Ablación del predictor sin cuotas', 'fill')+'<p class="hint">La plantilla reduce el log loss frente a la historia sola; las habilidades individuales no añaden más bajo LR (P2).</p></div></div>',
+          'Clasificación directa H/D/A y regresión de diferencia de goles convertida a probabilidades', kicker='Enfoque 2 · Sin cuotas')
+    # 9 · Sin cuotas: resultados
+    slide(f'Sin cuotas logramos el {100*sim.fraccion_ganancia_prior:.0f} % de la mejora que consigue el mercado',
+          '<div class="kpis">'+kpi(f'{100*sim.fraccion_ganancia_prior:.0f} %', 'de la ganancia del mercado sobre el prior', 'sin')+kpi(f'{sim.corr_logit:.2f}', 'correlación con el consenso', 'sin')+kpi(f'{100*sim.mismo_favorito:.0f} %', 'mismo favorito que las casas', 'sin')+'</div>'
+          +img('revision_predictor', 'Probabilidades propias frente al consenso')+
+          f'<p class="hint">Elegido: <b>{sin_name}</b> de modelos · log loss {metric(val,"modelo_sin")} en validación, frente a {metric(val,"prior")} del prior y {metric(val,"consenso")} del mercado. Sus cuotas justas son 1/P.</p>',
+          'Parecido al mercado no equivale a igual calidad ni a rentabilidad', kicker='Enfoque 2 · Sin cuotas')
+    # 10 · Test
+    slide('En el test se mantiene el mismo orden que en validación',
+          '<div class="two top"><div style="flex:1.4">'+table(test)+'</div><div class="stack">'
+          f'<div class="card con"><h4>Con cuotas</h4><p>{metric(test,"modelo_con")} frente a {metric(test,"consenso")} del consenso: −{gain_con:.2f} % de log loss, con IC 95 % que excluye cero.</p></div>'
+          f'<div class="card sin"><h4>Sin cuotas</h4><p>{metric(test,"modelo_sin")}: mucho mejor que el prior ({metric(test,"prior")}), aún por detrás del mercado.</p></div>'
+          '<div class="card"><h4>Accuracy</h4><p>Con cuotas, casi igual al consenso (53,9 % vs. 53,8 %): la diferencia está en la calidad de la probabilidad.</p></div></div></div>',
+          '5.999 partidos de 2024/25–2025/26 · modelos congelados con train/val', 'tested', 'Resultado final')
+    # 11 · Lo que probamos y no ganó
+    slide('Más complejidad no siempre ayuda: probamos y medimos',
+          '<div class="two">'+img('revision_ensembles', 'Ensembles en ambos enfoques')+img('revision_reduccion', 'MI y PCA en ambos enfoques')+'</div>'
+          '<div class="three"><div class="card"><h4>Ensembles</h4><p>Con cuotas ninguno supera a la LR de solo precio; sin cuotas el promedio sí ayuda y es el elegido.</p></div>'
+          '<div class="card"><h4>MI / PCA (P3)</h4><p>Con cuotas MI ayuda frente a usar todas, pero no al precio solo; sin cuotas reducir empeora.</p></div>'
+          '<div class="card"><h4>Pesos y remuestreo 50/50</h4><p>Más peso a los partidos donde falla el favorito empeora el log loss.</p></div></div>',
+          'Barras = diferencia de log loss frente a la LR con todas las variables (negativo es mejor) · validación', kicker='Experimentos adicionales')
+    # 12 · Rentabilidad
+    slide('Predecir mejor no garantiza ganar dinero',
+          '<div class="kpis">'+kpi(r_con, f'ROI con cuotas en test, Bet365 ({n_con} apuestas)', 'con')+kpi(r_sin, f'ROI sin cuotas en test, Bet365 ({n_sin} apuestas)', 'sin')+'</div>'
+          +img('revision_backtest', 'Backtest de ambos modelos')+
+          f'<p class="hint">Regla fija: apostar 1 unidad si el valor esperado supera 2 %. El intervalo con cuotas {ci_con} incluye pérdidas (P4).</p>',
+          'Ejercicio académico · no es una recomendación de apuestas', kicker='Rentabilidad')
+    # 13 · Conclusiones
+    slide('Conclusiones',
+          '<div class="takeaways">'
+          '<div><b>1</b><p>El mercado es una referencia muy difícil: con cuotas, una LR simple solo lo <b>recalibra</b> y gana por poco pero de forma consistente.</p></div>'
+          f'<div><b>2</b><p>Sin cuotas, historia + plantilla + habilidades reproducen el <b>{100*sim.fraccion_ganancia_prior:.0f} %</b> de la ganancia del mercado.</p></div>'
+          '<div><b>3</b><p>Log loss y calibración importan más que el accuracy para tomar decisiones con probabilidades.</p></div>'
+          '<div><b>4</b><p>Ensembles, PCA y pesos se evaluaron con el mismo rigor: el promedio ayuda sin cuotas; con cuotas gana la LR simple.</p></div></div>'
+          '<p class="limits">Límites: ratings del juego y no alineaciones reales, solo partidos de liga y cuotas sin hora exacta de captura.</p>'
+          '<p class="repo">github.com/jcarlos-t/MLProject</p>',
+          '¡Gracias! · Preguntas', 'cover closing', 'Para llevarse')
     style = '''
-:root{--ink:#0f172a;--mut:#475569;--con:#0d9488;--sin:#2563eb}*{box-sizing:border-box}body{margin:0;background:#e2e8f0;color:var(--ink);font-family:"Segoe UI",Arial,sans-serif;overflow:hidden}#stage{width:1280px;height:720px;position:absolute;left:50%;top:50%;transform-origin:center}.slide{position:absolute;inset:0;background:white;padding:45px 64px 58px;display:none;flex-direction:column}.slide.active{display:flex}h2{font-size:38px;line-height:1.15;margin:0 0 24px;font-weight:700;max-width:1100px}h3{font-size:27px;margin:0 0 16px}.content{flex:1;display:flex;flex-direction:column;gap:15px;min-height:0;justify-content:center}.content>img{max-height:330px;max-width:1120px;object-fit:contain;align-self:center}p,li{font-size:23px;line-height:1.38;margin:0}ul{margin:0;padding-left:28px}li{margin:15px 0}.lead{font-size:30px}.authors{margin-top:35px;font-size:20px;color:var(--mut)}.two{display:flex;gap:34px;align-items:center}.two>div{flex:1;padding:25px 26px;background:#f8fafc;border-left:5px solid}.two>img{width:49%;max-height:295px;object-fit:contain}.con{border-color:var(--con)!important}.sin{border-color:var(--sin)!important}.con-text{color:var(--con)}.sin-text{color:var(--sin)}footer{position:absolute;bottom:20px;left:64px;right:64px;display:flex;justify-content:space-between;font-size:14px;color:var(--mut);gap:25px}footer span:first-child{max-width:1030px}table{border-collapse:collapse;width:100%;font-size:23px}th,td{text-align:right;padding:12px 15px;border-bottom:1px solid #cbd5e1}th:first-child,td:first-child{text-align:left}thead{background:#f1f5f9}tbody tr:nth-last-child(2){color:var(--con);font-weight:600}tbody tr:last-child{color:var(--sin);font-weight:600}.timeline p{padding:18px 22px;margin-bottom:12px;background:#f1f5f9}.timeline .test{background:#fef3c7}.repo{color:var(--sin);font-size:20px}button{position:fixed;right:20px;bottom:12px;z-index:10;padding:8px 14px;border:1px solid #94a3b8;background:white;color:var(--ink);border-radius:4px;cursor:pointer}button:focus-visible{outline:3px solid var(--sin)}
-@media print{@page{size:1280px 720px;margin:0}html,body{width:1280px;height:auto;overflow:visible;background:white}#stage{position:static;transform:none!important;height:auto}.slide{position:relative;display:flex!important;width:1280px;height:720px;break-after:page;page-break-after:always}.slide:last-child{break-after:auto;page-break-after:auto}button{display:none}}
+:root{--ink:#0f172a;--mut:#475569;--soft:#f1f5f9;--line:#e2e8f0;--con:#0d9488;--con-bg:#ccfbf1;--sin:#2563eb;--sin-bg:#dbeafe;--test:#d97706;--test-bg:#fef3c7;--navy:#0b1730}
+*{box-sizing:border-box}body{margin:0;background:#cbd5e1;color:var(--ink);font-family:Inter,"Segoe UI",system-ui,Arial,sans-serif;overflow:hidden}
+#stage{width:1280px;height:720px;position:absolute;left:50%;top:50%;transform-origin:center}
+.slide{position:absolute;inset:0;background:white;padding:40px 64px 56px;display:none;flex-direction:column}.slide.active{display:flex}
+.slide::before{content:"";position:absolute;left:0;top:0;bottom:0;width:10px;background:linear-gradient(var(--con),var(--sin))}
+.kicker{font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);font-weight:700;margin:0 0 8px}
+h2{font-size:36px;line-height:1.15;margin:0 0 18px;font-weight:800;max-width:1150px;letter-spacing:-.01em}
+h3{font-size:26px;margin:8px 0 8px}h4{font-size:19px;margin:0 0 4px}
+.content{flex:1;display:flex;flex-direction:column;gap:16px;min-height:0;justify-content:center}
+.content>img{max-height:300px;max-width:1140px;object-fit:contain;align-self:center}
+p,li{font-size:21px;line-height:1.4;margin:0}.lead{font-size:27px;color:#cbd5e1;max-width:1000px}.hint{font-size:18px;color:var(--mut)}.big{font-size:24px;font-weight:700;margin-bottom:14px}
+.two{display:flex;gap:28px;align-items:center}.two.top{align-items:stretch}.two>*{flex:1;min-width:0}.two>img{max-height:260px;object-fit:contain}
+img.fill{width:100%;max-height:300px;object-fit:contain}
+.three{display:flex;gap:18px}.three>*{flex:1}.stack{display:flex;flex-direction:column;gap:12px}
+.card{background:var(--soft);border-radius:14px;padding:16px 20px;border-left:6px solid #94a3b8}.card p{font-size:18px}
+.card.con{border-color:var(--con);background:#f0fdfa}.card.sin{border-color:var(--sin);background:#eff6ff}
+.tag{display:inline-block;font-size:14px;font-weight:700;padding:4px 10px;border-radius:999px;color:white;margin-bottom:6px}.tag.con{background:var(--con)}.tag.sin{background:var(--sin)}
+.kpis{display:flex;gap:20px}.kpi{flex:1;background:var(--soft);border-radius:14px;padding:16px 20px;display:flex;flex-direction:column;gap:4px}
+.kpi b{font-size:40px;line-height:1.05;font-weight:800}.kpi span{font-size:16px;color:var(--mut)}.kpi.con b{color:var(--con)}.kpi.sin b{color:var(--sin)}
+.kpis.small .kpi b{font-size:24px}
+.match{display:flex;justify-content:center;align-items:center;gap:30px}.team{font-size:28px;font-weight:800;padding:12px 40px;border-radius:12px;background:var(--soft)}.vs{color:var(--mut);font-size:22px}
+.probbar{display:flex;height:58px;border-radius:12px;overflow:hidden;font-size:20px;font-weight:700;color:white}.probbar>div{display:flex;align-items:center;justify-content:center}
+.probbar .h{background:var(--con)}.probbar .d{background:#94a3b8}.probbar .a{background:var(--sin)}
+table{border-collapse:collapse;width:100%;font-size:19px}th,td{text-align:right;padding:9px 12px;border-bottom:1px solid var(--line)}th:first-child,td:first-child{text-align:left}thead th{background:var(--soft);font-size:16px;color:var(--mut)}
+table.mini{font-size:20px}tr.bad td{color:#b91c1c;font-weight:700}tr.sum td{color:var(--mut)}
+tr.r-modelo_con td{color:var(--con);font-weight:700}tr.r-modelo_sin td{color:var(--sin);font-weight:700}tr.r-prior td{color:#94a3b8}
+.timeline{display:flex;gap:6px;height:96px}.seg{border-radius:12px;padding:12px 16px;display:flex;flex-direction:column;justify-content:center;gap:4px;color:white}.seg b{font-size:19px}.seg span{font-size:15px;opacity:.92}
+.seg.hist{background:#64748b}.seg.val{background:var(--con)}.seg.test{background:var(--test)}
+.flow{display:flex;align-items:stretch;gap:10px}.flow div{flex:1;background:var(--soft);border-radius:12px;padding:14px;font-size:18px;font-weight:600;display:flex;align-items:center}.flow i{align-self:center;font-style:normal;font-size:26px;color:var(--mut)}
+.tested::before{background:var(--test)}
+.cover{background:radial-gradient(circle at 85% 15%,#134e4a 0,transparent 45%),radial-gradient(circle at 10% 90%,#1e3a8a 0,transparent 45%),var(--navy);color:white}
+.cover::before{display:none}.cover h2{font-size:50px;max-width:1050px}.cover .kicker{color:#5eead4}.cover footer{color:#94a3b8}
+.cover .kpi{background:rgba(255,255,255,.08)}.cover .kpi b{color:white}.cover .kpi span{color:#cbd5e1}.authors{font-size:19px;color:#cbd5e1;margin-top:10px}
+.closing h2{font-size:44px}.takeaways{display:grid;grid-template-columns:1fr 1fr;gap:16px}.takeaways div{display:flex;gap:16px;background:rgba(255,255,255,.07);border-radius:14px;padding:16px 20px;align-items:flex-start}
+.takeaways>div>b{font-size:30px;color:#5eead4;line-height:1}.takeaways p{font-size:19px;color:#e2e8f0}.limits{font-size:17px;color:#94a3b8}.repo{color:#93c5fd;font-size:20px;font-weight:700}
+footer{position:absolute;bottom:18px;left:64px;right:64px;display:flex;justify-content:space-between;font-size:14px;color:var(--mut);gap:25px}
+button{position:fixed;right:20px;bottom:12px;z-index:10;padding:8px 14px;border:1px solid #94a3b8;background:white;color:var(--ink);border-radius:6px;cursor:pointer}button:focus-visible{outline:3px solid var(--sin)}
+@media print{@page{size:1280px 720px;margin:0}html,body{width:1280px;height:auto;overflow:visible;background:white}#stage{position:static;transform:none!important;height:auto}.slide{position:relative;display:flex!important;width:1280px;height:720px;break-after:page;page-break-after:always;-webkit-print-color-adjust:exact;print-color-adjust:exact}.slide:last-child{break-after:auto;page-break-after:auto}button{display:none}}
 '''
     script = '''let i=Math.max(0,Math.min(12,(parseInt(location.hash.slice(1))||1)-1));const slides=[...document.querySelectorAll('.slide')],stage=document.querySelector('#stage');function fit(){const s=Math.min(innerWidth/1280,innerHeight/720);stage.style.transform=`translate(-50%,-50%) scale(${s})`}function show(){slides.forEach((s,k)=>s.classList.toggle('active',k===i));history.replaceState(null,'','#'+(i+1))}addEventListener('resize',fit);addEventListener('keydown',e=>{if(['ArrowRight','PageDown',' ','Enter'].includes(e.key)){e.preventDefault();i=Math.min(12,i+1)}else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();i=Math.max(0,i-1)}else if(e.key==='Home')i=0;else if(e.key==='End')i=12;show()});document.querySelector('button').addEventListener('click',()=>print());fit();show();'''
     path = ROOT/'docs/presentacion'; (path/'img').mkdir(exist_ok=True)

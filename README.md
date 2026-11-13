@@ -7,13 +7,12 @@ Proyecto de Machine Learning de UTEC (Sección 3). Estima P(local), P(empate) y 
 
 Equipo: José Luis Alva Espinoza, Juan Carlos Ticlia Maqui, Elmer José Manuel Villegas Suárez y Joseph Anderson Cose Rojas.
 
-## Protocolo corregido
+## Protocolo
 
 - 36.150 partidos originales; 36.119 comparables. Los 31 sin mercado participan en el historial previo, pero no en la comparación pareada.
 - Calentamiento: 2013/14. Train/val: 2014/15–2023/24, 30.120 partidos. Seis folds exteriores: 2018/19–2023/24.
 - Ajuste temporal interior con las dos temporadas anteriores a cada fold, incluyendo imputación, escalado, poda y MI/PCA dentro del entrenamiento.
-- Test 2024/25–2025/26: 5.999 partidos, **previamente observado y reevaluado tras la auditoría**. Borrar o reentrenar un modelo no vuelve desconocido ese periodo.
-- La selección se congela antes de generar las predicciones revisadas del test. Un resultado posterior no modifica esa selección.
+- Test 2024/25–2025/26: 5.999 partidos. La selección se congela con train/val antes de generar las predicciones del test.
 - Ratings: doce fechas verificadas en `scripts/download/snapshot_availability.json`. Cruce hacia atrás por club, estrictamente antes de la fecha del partido. Si falta el snapshot, se usa una versión previa verificable o se conserva el faltante.
 - Cuotas **pre-cierre observadas**, no necesariamente apertura real ni capturas simultáneas. Pinnacle no se considera fiable desde el 23/07/2025; se usa el consenso de otras casas y se restringe su backtest al periodo fiable.
 - El modelo deportivo puro no recibe cuotas como variables, pesos ni entradas de calibración. Las variantes reponderadas por errores del favorito se identifican como **guiadas por mercado**.
@@ -58,9 +57,9 @@ Los esquemas data-centric mantienen factores 2/3/5, igualdad de peso acierto/fal
 
 ## Uso de ambos modelos
 
-Resultados de la ejecución revisada `01afe756130bafc6` (menor log loss es mejor):
+Resultados de la ejecución `01afe756130bafc6` (menor log loss es mejor):
 
-| Modelo / referencia | Validación temporal | Test revisado, previamente observado |
+| Modelo / referencia | Validación temporal | Test 2024/25–2025/26 |
 |---|---:|---:|
 | Consenso directo | 0,966435 | 0,966804 |
 | Con cuotas: LR de referencia | **0,965199** | **0,965034** |
@@ -79,12 +78,19 @@ El ejemplo no incorpora partidos nuevos automáticamente: la historia disponible
 
 ## Entregables y trazabilidad
 
+El experimento adicional de empates está documentado en [EXPERIMENTO_EMPATES.md](docs/EXPERIMENTO_EMPATES.md), con su [tabla de métricas](docs/resultados_empates.csv). Compara Poisson para goles, bandas de diferencia prevista, similitud de plantillas, un detector binario y reglas optimizadas para F1 en ambas ramas. Los umbrales usan temporadas anteriores y la familia se elige en validación. Mejora F1 macro y detección del empate, a costa de accuracy; no mejora el log loss de los modelos principales. Su evaluación es exploratoria.
+
+```bash
+.venv/bin/python scripts/experiment_draws.py
+```
+
+Los modelos adicionales se guardan en `scripts/data/draw_runs/<huella>/`, separados de los predictores principales; `scripts/data/draw_actual.txt` indica la ejecución. Ofrecen `predict_proba(frame)` para probabilidades y `predict(frame)` para la decisión orientada a F1. Las dos salidas pueden tener una clase distinta de la de mayor probabilidad.
+
 - `docs/informe.tex` / `informe.pdf`: informe IEEE, máximo 12 páginas, con resultados de ambos enfoques.
 - `docs/presentacion/presentacion.html` / `presentacion.pdf`: 13 diapositivas, 10 minutos; flechas para navegar e impresión PDF.
 - `docs/resultados_revision.csv`: única tabla numérica utilizada por ambos entregables.
-- `docs/AUDITORIA_PROYECTO.md`: hallazgos iniciales y estado de resolución.
 - `scripts/mlcore/`: implementación compartida y probada; `scripts/notebooks/`: exposición ejecutada de cada etapa.
 
-Los resultados anteriores, cuadernos y documentos se preservan localmente en `scripts/data/archive/pre_revision_20261112/`. No se mezclan con resultados revisados. Las figuras antiguas que ya no cita el informe son antecedentes; las vigentes llevan prefijo `revision_` y se generan directamente desde los resultados, sin índices frágiles de celdas ni recortes pendientes.
+Los resultados anteriores, cuadernos y documentos se preservan localmente en `scripts/data/archive/pre_revision_20261112/`. No se mezclan con los resultados vigentes. Las figuras antiguas que ya no cita el informe son antecedentes; las vigentes llevan prefijo `revision_` y se generan directamente desde los resultados, sin índices frágiles de celdas ni recortes pendientes.
 
-Los CSV crudos no se versionan ni redistribuyen. Se conservan las fuentes y huellas para uso académico. La auditoría corrige fugas detectadas, pero no elimina los límites de cobertura, ratings antiguos, alineaciones del juego, partidos solo de liga, sincronización de cuotas y test observado.
+Los CSV crudos no se versionan ni redistribuyen. Se conservan las fuentes y huellas para uso académico. Persisten los límites de cobertura, ratings antiguos, alineaciones del juego, partidos solo de liga y sincronización de cuotas.

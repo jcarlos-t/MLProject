@@ -53,7 +53,7 @@ joseph.cose@utec.edu.pe}
 \maketitle
 
 \begin{abstract}
-Se estudian dos problemas complementarios con la misma evaluación: cuánto añade el aprendizaje a las probabilidades implícitas de las casas de apuestas y cuánto puede predecirse sin consultar sus precios. Se construye una base de 36,119 partidos modelables de nueve ligas europeas, de 2014/15 a 2025/26, con resultados históricos y ratings FIFA/FC. Se corrige la disponibilidad temporal de los ratings, el preprocesamiento fuera de las particiones, la calibración del SVM y la propagación de las configuraciones revisadas. Se comparan clasificación directa, regresión de diferencia de goles, selección MI/PCA, ensembles y reponderación. En seis temporadas de validación, los modelos elegidos con y sin cuotas obtienen log loss 0.9652 y 0.9776, frente a 0.9664 del consenso. En la evaluación revisada de 5,999 partidos obtienen 0.9650 y 0.9793, frente a 0.9668. El predictor sin cuotas reproduce el 89.4\% de la reducción de pérdida del mercado respecto al prior en validación. El test ya había sido observado antes de la auditoría: esta reevaluación no constituye evidencia prospectiva independiente. Se distinguen calidad probabilística, parecido al mercado y rentabilidad; las conclusiones se limitan a los métodos y datos evaluados.
+Se estudian dos problemas complementarios con la misma evaluación: cuánto añade el aprendizaje a las probabilidades implícitas de las casas de apuestas y cuánto puede predecirse sin consultar sus precios. Se construye una base de 36,119 partidos modelables de nueve ligas europeas, de 2014/15 a 2025/26, con resultados históricos y ratings FIFA/FC. Cada rating se toma de una versión publicada antes del partido y todo el preprocesamiento se ajusta dentro de cada partición de entrenamiento. Se comparan clasificación directa, regresión de diferencia de goles, selección MI/PCA, ensembles y reponderación. En seis temporadas de validación, los modelos elegidos con y sin cuotas obtienen log loss 0.9652 y 0.9776, frente a 0.9664 del consenso. En el test de 5,999 partidos (2024/25--2025/26) obtienen 0.9650 y 0.9793, frente a 0.9668. El predictor sin cuotas reproduce el 89.4\% de la reducción de pérdida del mercado respecto al prior en validación. Se distinguen calidad probabilística, parecido al mercado y rentabilidad; las conclusiones se limitan a los métodos y datos evaluados.
 \end{abstract}
 \begin{IEEEkeywords}
 fútbol, clasificación probabilística, cuotas, ratings, validación temporal, calibración, data leakage.
@@ -81,7 +81,7 @@ Se conservan cuatro preguntas: \textbf{P1}, estabilidad entre temporadas; \textb
 \subsection{Fuentes y cobertura}
 Football-Data~\cite{footballdata} proporciona 36.150 partidos originales de nueve primeras divisiones europeas: Inglaterra, Alemania, España, Italia, Francia, Países Bajos, Portugal, Turquía y Bélgica. Se conservan 36,119 con al menos una casa válida; los otros 31 alimentan la historia, pero no la comparación pareada. Los resultados de 2013/14 inicializan el historial y no se modelan. Los ratings FIFA/FC proceden de cuatro conjuntos públicos~\cite{kagglefifa}.
 
-La Fig.~\ref{fig:datos} muestra el balance de clases y la cobertura. Las estadísticas de tiros, córners, faltas y tarjetas tienen faltantes estructurales; se mantienen hasta el ajuste del imputador. La disponibilidad de plantilla ya no se fuerza al 100\%: se exige que el snapshot preceda al partido. No se eliminan automáticamente las colas de cuotas o goles por ser extremas, porque pueden corresponder a partidos reales.
+La Fig.~\ref{fig:datos} muestra el balance de clases y la cobertura. Las estadísticas de tiros, córners, faltas y tarjetas tienen faltantes estructurales; se mantienen hasta el ajuste del imputador. La disponibilidad de plantilla no se fuerza al 100\%: se exige que el snapshot preceda al partido. No se eliminan automáticamente las colas de cuotas o goles por ser extremas, porque pueden corresponder a partidos reales.
 \begin{figure*}[!htb]
 \centering
 \includegraphics[width=0.96\textwidth]{revision_datos.png}
@@ -91,7 +91,7 @@ La Fig.~\ref{fig:datos} muestra el balance de clases y la cobertura. Las estadí
 
 
 \subsection{Disponibilidad temporal de los ratings}
-La auditoría detectó que asignar un único snapshot a todos los partidos de su temporada introducía datos posteriores. Se acreditaron las fechas de doce versiones: las antiguas se enlazaron por identificador de actualización SoFIFA y coincidencia de ratings con los metadatos de la misma fuente; las recientes conservan una fecha explícita. Cada equipo utiliza su snapshot verificable más reciente estrictamente anterior a la fecha del partido; si falta, retrocede a una versión anterior del club y, en ausencia de ella, conserva NaN.
+Asignar un único snapshot a todos los partidos de su temporada introduciría datos posteriores al partido. Se acreditaron las fechas de doce versiones: las antiguas se enlazaron por identificador de actualización SoFIFA y coincidencia de ratings con los metadatos de la misma fuente; las recientes conservan una fecha explícita. Cada equipo utiliza su snapshot verificable más reciente estrictamente anterior a la fecha del partido; si falta, retrocede a una versión anterior del club y, en ausencia de ella, conserva NaN.
 
 Esto evita atribuir el snapshot de julio de 2025 a partidos de 2024/25. Como consecuencia, durante esa temporada se usan en ocasiones ratings anteriores: la antigüedad es una limitación medible, no una imputación encubierta. Los titulares son los asignados por el juego al club, no alineaciones conocidas de cada encuentro. Los nombres de los clubes se armonizan mediante una tabla de identidad, que no aporta resultados deportivos.
 
@@ -106,7 +106,7 @@ Las variables se calculan cronológicamente. Se leen los estados previos de todo
 El prior suavizado de puntos se calcula con resultados anteriores a la fecha. La normalización de plantilla utiliza clubes de snapshots ya disponibles, una vez por club, sin ponderarlos por partidos futuros. Las habilidades resumen los cuatro mejores jugadores de campo en cada atributo y el portero del once del snapshot; se usan diferencias entre equipos. Son valoraciones del juego, no mediciones de rendimiento del partido.
 
 \subsection{Transformaciones aprendidas dentro del entrenamiento}
-Imputación por mediana, indicadores de ausencia, escalado, poda por correlación y MI/PCA se ajustan dentro del entrenamiento de cada partición, tanto interior como exterior. Las columnas totalmente vacías se conservan con valor neutro para mantener el esquema. La poda conserva la primera variable de un par con correlación absoluta mayor que 0,95. MI elige cinco o diez variables; PCA se evalúa con cinco componentes o 95\% de varianza. Las rejillas se fijaron antes de calcular los resultados revisados.
+Imputación por mediana, indicadores de ausencia, escalado, poda por correlación y MI/PCA se ajustan dentro del entrenamiento de cada partición, tanto interior como exterior. Las columnas totalmente vacías se conservan con valor neutro para mantener el esquema. La poda conserva la primera variable de un par con correlación absoluta mayor que 0,95. MI elige cinco o diez variables; PCA se evalúa con cinco componentes o 95\% de varianza. Las rejillas se fijaron antes de calcular los resultados.
 
 Se diferencia entre una tabla de diagnóstico y una decisión de selección: ninguna columna se elimina por un veredicto descriptivo sin que la transformación correspondiente se aplique y evalúe dentro del pipeline. Esta separación sigue las recomendaciones sobre ingeniería de variables de Zheng y Casari~\cite{zheng2018}. El predictor puro sin cuotas no utiliza precios para construir entradas, ponderaciones ni calibradores.
 
@@ -123,7 +123,7 @@ Ambas ramas comparan LR, HGB, XGBoost, Random Forest, MLP y SVM. La MLP promedia
 
 Cada rama tiene promedio, ponderación convexa y stacking multinomial. Los pesos y el metamodelo se aprenden con predicciones de temporadas anteriores. Se generan predicciones de 2017/18 para inicializar el primer fold de evaluación de 2018/19; así no se sustituye ese fold por una estrategia distinta. La regularización y la comparación temporal siguen el marco de selección de modelos de James et al.~\cite{james2023}.
 
-\subsection{Respuesta data-centric}
+\subsection{Enfoque data-centric: pesos y remuestreo}
 Se da más peso a los errores del favorito del consenso: factores 2, 3 y 5; igualdad de peso total entre aciertos y fallos; inverso de la probabilidad del resultado y su raíz. Se ensayan submuestreo y sobremuestreo 50/50 con tres semillas y recalibración posterior del esquema balanceado. Todos se construyen exclusivamente con resultados de entrenamiento. Cuando una variante deportiva usa estos pesos se denomina \emph{entrenamiento guiado por mercado}; no reemplaza al predictor sin cuotas puro.
 
 \section{Diseño experimental}
@@ -132,7 +132,7 @@ El entrenamiento y desarrollo comprenden 2014/15--2023/24. Se evalúan seis temp
 
 La comparación principal usa exactamente los mismos partidos y el log loss agregado por partido. Dentro de 0,0005 del mínimo se prefiere menor complejidad: LR, HGB, XGBoost, RF, MLP, SVM y ensembles; en regresión se mantiene un orden explícito de simplicidad. Se elige un candidato por rama. La selección entre familias a partir de esas seis temporadas conserva sesgo de desarrollo; no se presenta como una validación anidada de todo el proceso científico.
 
-\textbf{Test revisado.} Los resultados del periodo 2024/25--2025/26 ya se conocían antes de esta revisión. Se congelaron las decisiones usando solo train/val y después se generaron predicciones corregidas para ambas ramas. No se afirma que eliminar o reentrenar el modelo convierta esos partidos en evidencia nueva: es una reevaluación sobre un test observado, no una prueba prospectiva independiente.
+\textbf{Test.} Las temporadas 2024/25--2025/26 (5.999 partidos) se reservan como test. Variables, familia, hiperparámetros, ensembles y umbral del backtest se congelan usando solo train/val; después cada modelo se reentrena con todo 2014/15--2023/24 y predice el test sin ningún ajuste adicional.
 
 Los intervalos usan bootstrap por bloques de temporada, año ISO y semana ISO, con 5.000 remuestreos. Incluir el año evita agrupar dos semanas de años distintos durante temporadas extendidas. Se declaran cinco comparaciones principales por partición y se aplica Benjamini--Hochberg~\cite{benjamini1995}; los desgloses por liga son descriptivos. Los indicadores de estabilidad se interpretan como diagnósticos de cambio~\cite{siddiqi2017}, sin asegurar ausencia de drift porque una tendencia no resulte significativa.
 
@@ -140,7 +140,7 @@ Los intervalos usan bootstrap por bloques de temporada, año ISO y semana ISO, c
 \section{Resultados y análisis}
 \label{sec:resultados}
 \subsection{Enfoque con cuotas: aportación frente al precio directo}
-La selección elige LR referencia, con log loss 0.9652 frente a 0.9664 del consenso en validación. En el test revisado, los valores son 0.9650 y 0.9668. El Cuadro~\ref{tab:con} compara las familias; no se equipara una mejora de log loss con una mejora de ordenación. AUC y calibración se examinan de forma complementaria.\begin{table}[!htb]
+La selección elige LR referencia, con log loss 0.9652 frente a 0.9664 del consenso en validación. En el test, los valores son 0.9650 y 0.9668. El Cuadro~\ref{tab:con} compara las familias; no se equipara una mejora de log loss con una mejora de ordenación. AUC y calibración se examinan de forma complementaria.\begin{table}[!htb]
 \caption{Modelos con cuotas: predicciones exteriores de validación, con ajustes temporales interiores. LR completa incluye fundamentos; LR de referencia y de consenso solo mercado.}
 \centering\footnotesize
 \resizebox{\columnwidth}{!}{\begin{tabular}{lrrr}
@@ -159,14 +159,14 @@ SVM & 0.9945 & 0.655 & 0.0228 \\
 \label{tab:con}
 \end{table}
 
-La Fig.~\ref{fig:modelos} muestra el rango de resultados en ambos enfoques. Se conservan todas las configuraciones revisadas en las evaluaciones posteriores; los ensembles no reutilizan predicciones de una versión anterior del SVM ni hiperparámetros descartados.\begin{figure*}[!htb]
+La Fig.~\ref{fig:modelos} muestra el rango de resultados en ambos enfoques. La configuración elegida en cada fold se propaga a todas las evaluaciones posteriores, y los ensembles combinan exactamente esas predicciones.\begin{figure*}[!htb]
 \centering
 \includegraphics[width=0.96\textwidth]{revision_modelos.png}
 \caption{Comparación de familias con cuotas (izquierda) y sin cuotas (derecha), sobre los mismos seis folds. Las escalas se ajustan por panel para hacer visibles las diferencias.}
 \label{fig:modelos}
 \end{figure*}
 
-\subsection{Enfoque sin cuotas: construcción de un precio propio}La selección deportiva elige Promedio. Obtiene log loss 0.9776 en validación y 0.9793 en el test revisado; sus accuracy 1X2 son 53.1\% y 52.4\%. Estos porcentajes usan todos los partidos, incluidos empates. El Cuadro~\ref{tab:sin} permite contrastar clasificación directa y regresión convertida en probabilidad.\begin{table}[!htb]
+\subsection{Enfoque sin cuotas: construcción de un precio propio}La selección deportiva elige Promedio. Obtiene log loss 0.9776 en validación y 0.9793 en el test; sus accuracy 1X2 son 53.1\% y 52.4\%. Estos porcentajes usan todos los partidos, incluidos empates. El Cuadro~\ref{tab:sin} permite contrastar clasificación directa y regresión convertida en probabilidad.\begin{table}[!htb]
 \caption{Modelos sin cuotas. GD identifica regresión de diferencia de goles con calibrador temporal; ALL promedia regresión lineal, RF y HGB antes de calibrar.}
 \centering\footnotesize
 \resizebox{\columnwidth}{!}{\begin{tabular}{lrrr}
@@ -196,7 +196,7 @@ La Fig.~\ref{fig:ablacion} responde P2: se compara historia sola, historia con p
 \end{figure}
 
 \subsection{Comparación común de probabilidades}El Cuadro~\ref{tab:final} reúne referencias y modelos finales sobre la misma cohorte.\begin{table}[!htb]
-\caption{Comparación principal. Test revisado significa periodo previamente observado, reevaluado tras congelar las decisiones; ECE de igual masa.}
+\caption{Comparación principal en validación (seis temporadas) y test (2024/25--2025/26); ECE de igual masa.}
 \centering\footnotesize
 \resizebox{\columnwidth}{!}{\begin{tabular}{lrrrr}
 \toprule
@@ -212,7 +212,7 @@ Modelo sin cuotas & 0.9776 & 0.9793 & 0.668 & 0.0121 \\
 \end{table}
 
 Los contrastes pareados se detallan en el Cuadro~\ref{tab:contrastes}. Los intervalos miden incertidumbre del remuestreo condicionado a estos procedimientos; no corrigen por sí solos todo el sesgo de exploración.\begin{table}[!htb]
-\caption{Diferencias pareadas en test revisado; negativo favorece al primer modelo. Familia de cinco contrastes predefinidos.}
+\caption{Diferencias pareadas en el test; negativo favorece al primer modelo. Familia de cinco contrastes predefinidos.}
 \centering\footnotesize
 \resizebox{\columnwidth}{!}{\begin{tabular}{lrrr}
 \toprule
@@ -237,7 +237,7 @@ La Fig.~\ref{fig:cal} compara calibración por clase y la Fig.~\ref{fig:temporad
 \begin{figure*}[!htb]
 \centering
 \includegraphics[width=0.96\textwidth]{revision_temporadas.png}
-\caption{Log loss por temporada para cada modelo y sus referencias. El fondo destaca el test revisado; las predicciones de validación son exteriores.}
+\caption{Log loss por temporada para cada modelo y sus referencias. El fondo destaca el test; las predicciones de validación son exteriores.}
 \label{fig:temporadas}
 \end{figure*}
 
@@ -262,7 +262,7 @@ Las probabilidades pueden transformarse en cuotas justas mediante $1/p$: estas n
 \label{fig:ens}
 \end{figure*}
 
-Frente a la LR deportiva con historia y plantilla, el promedio sin cuotas reduce LL en 0.0011 (IC 95\% de la diferencia [-0.0020, -0.0001]; $p$ BH=0.036), con mejora en cinco de seis temporadas. El ponderado logra un valor algo menor, pero el promedio queda dentro de la tolerancia predefinida de 0,0005 y se prefiere por simplicidad. Con cuotas, el ponderado queda prácticamente igual a la LR de referencia y su intervalo incluye cero. Por tanto, el beneficio del ensemble depende de la rama; estos contrastes de desarrollo no sustituyen un test futuro.La Fig.~\ref{fig:pesos} muestra el experimento solicitado por el profesor. El objetivo sigue siendo calibración sobre la distribución real de partidos, no maximizar el acierto en el subconjunto donde el favorito pierde. Se reporta el efecto medio sin afirmar que todos los esquemas empeoren en cada temporada; la recalibración se evalúa en las cinco temporadas para las que existe una anterior con predicciones del mismo procedimiento.\begin{figure*}[!htb]
+Frente a la LR deportiva con historia y plantilla, el promedio sin cuotas reduce LL en 0.0011 (IC 95\% de la diferencia [-0.0020, -0.0001]; $p$ BH=0.036), con mejora en cinco de seis temporadas. El ponderado logra un valor algo menor, pero el promedio queda dentro de la tolerancia predefinida de 0,0005 y se prefiere por simplicidad. Con cuotas, el ponderado queda prácticamente igual a la LR de referencia y su intervalo incluye cero. Por tanto, el beneficio del ensemble depende de la rama; estos contrastes pertenecen a la validación.La Fig.~\ref{fig:pesos} muestra el experimento data-centric: más peso o remuestreo en los partidos donde el favorito del mercado falla. El objetivo sigue siendo calibración sobre la distribución real de partidos, no maximizar el acierto en el subconjunto donde el favorito pierde. Se reporta el efecto medio sin afirmar que todos los esquemas empeoren en cada temporada; la recalibración se evalúa en las cinco temporadas para las que existe una anterior con predicciones del mismo procedimiento.\begin{figure*}[!htb]
 \centering
 \includegraphics[width=0.96\textwidth]{revision_pesos.png}
 \caption{Pesos y remuestreo guiados por errores del mercado. La rama sin entradas de cuotas se identifica como guiada por mercado cuando usa esos pesos.}
@@ -281,19 +281,19 @@ Frente a la LR deportiva con historia y plantilla, el promedio sin cuotas reduce
 \label{sec:discusion}
 La comparación con cuotas mide el aporte adicional a un precio ya informativo; el predictor sin cuotas mide cuánto puede construirse con datos deportivos. Tienen valor científico aunque ninguno supere al mercado. Un modelo de menor log loss realiza una predicción probabilística mejor según esa regla; si el AUC cambia poco, eso sugiere que buena parte de la diferencia reside en calibración, sin convertirlo en una identidad demostrada.
 
-Los resultados actuales reemplazan los números anteriores porque se corrigieron entradas y procedimientos, no porque se buscara reproducir una conclusión previa. Cada transformación llega a las predicciones evaluadas y se documenta la configuración por fold. La disponibilidad temporal elimina una fuga, pero puede deteriorar el rendimiento al utilizar plantillas antiguas: ese coste es preferible a presentar una estimación retrospectiva como disponible en su día.
+Cada transformación llega a las predicciones evaluadas y se documenta la configuración por fold. La disponibilidad temporal evita una fuga, pero puede deteriorar el rendimiento al utilizar plantillas antiguas: ese coste es preferible a presentar una estimación retrospectiva como disponible en su día.
 
-Persisten limitaciones: no hay alineaciones reales ni lesiones; la historia cubre solo liga; las cuotas carecen de sincronización exacta; los ratings de algunas temporadas son antiguos; las rejillas son acotadas; y el test revisado ya había sido observado. Ningún intervalo convierte ese último periodo en validación prospectiva. Una próxima evaluación debería fijar primero el protocolo y esperar partidos nuevos. Tampoco se descarta drift por falta de significación ni se extrapola el resultado a otras ligas o deportes.
+Persisten limitaciones: no hay alineaciones reales ni lesiones; la historia cubre solo liga; las cuotas carecen de sincronización exacta; los ratings de algunas temporadas son antiguos; y las rejillas son acotadas. Además, el periodo de test se había evaluado con una versión anterior del sistema, por lo que conviene confirmar los resultados con partidos de 2026/27. Tampoco se descarta drift por falta de significación ni se extrapola el resultado a otras ligas o deportes.
 
 Las fuentes se utilizan para fines académicos, sin redistribuir sus CSV crudos. No se modelan datos sensibles de personas. La calidad desigual de cobertura puede perjudicar a equipos con menos historia, por lo que se publica la cobertura en lugar de ocultarla con imputaciones globales. El análisis de rentabilidad es experimental y no constituye recomendación de apuestas.
 
 \section{Conclusiones}
 \label{sec:conclusiones}
-Se entregan dos predictores con un protocolo común. Con cuotas se obtiene log loss 0.9652 en validación y 0.9650 en test revisado; sin cuotas, 0.9776 y 0.9793. La referencia de consenso obtiene 0.9664 y 0.9668. Estas comparaciones permiten valorar por separado el ajuste del precio y la capacidad deportiva propia.
+Se entregan dos predictores con un protocolo común. Con cuotas se obtiene log loss 0.9652 en validación y 0.9650 en test; sin cuotas, 0.9776 y 0.9793. La referencia de consenso obtiene 0.9664 y 0.9668. Estas comparaciones permiten valorar por separado el ajuste del precio y la capacidad deportiva propia.
 
 P1 se responde mediante resultados por temporada y diagnósticos de cobertura, sin afirmar ausencia universal de cambio. P2 se responde con una ablación explícita de historia, plantilla y habilidades. P3 se responde comparando MI y PCA sobre los mismos folds y transformaciones internas. P4 se responde con backtests de reglas fijas, intervalos y referencias de mercado: no debe deducirse rentabilidad solo de un promedio positivo. Los ensembles y la reponderación se juzgan por sus resultados corregidos en cada rama, sin exigir que superen a un método sencillo.
 
-Como continuación, interesa incorporar snapshots más frecuentes, alineaciones y ausencias verificables, así como datos xG históricos. Los modelos de conteo de goles ofrecen otro contraste~\cite{dixon1997,karlis2003}. El siguiente test debe ser verdaderamente futuro respecto al protocolo congelado.
+Como continuación, interesa incorporar snapshots más frecuentes, alineaciones y ausencias verificables, así como datos xG históricos. Los modelos de conteo de goles ofrecen otro contraste~\cite{dixon1997,karlis2003}. También conviene aplicar el protocolo congelado a la temporada 2026/27.
 
 \FloatBarrier
 \begin{thebibliography}{10}

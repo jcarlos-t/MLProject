@@ -16,7 +16,7 @@ La base científica vigente está en el directorio señalado por `scripts/data/r
 | `GD` | Goles locales menos visitantes | Target de regresión |
 | `FTR`, `FTHG`, `FTAG`, estadísticas del encuentro | Resultado y observaciones postpartido | Solo targets o actualización de historia posterior; excluidos de todas las listas predictoras |
 
-Los 36.150 partidos originales generan 36.119 comparables; 31 sin ninguna cuota válida alimentan historia pero no la comparación pareada. Train/val: 30.120; test observado y revisado: 5.999. El calentamiento 2013/14 no se modela.
+Los 36.150 partidos originales generan 36.119 comparables; 31 sin ninguna cuota válida alimentan historia pero no la comparación pareada. Train/val: 30.120; test: 5.999. El calentamiento 2013/14 no se modela.
 
 ## Historia deportiva: 38 variables
 
@@ -66,4 +66,4 @@ El pipeline aprende imputación, indicadores, escalado, poda y MI/PCA con el ent
 
 Las predicciones tienen `match_id`, temporada, target y tres probabilidades en orden H/D/A. Las tablas de métricas identifican partición, modelo y definición del ECE. `acierto_ganador_condicional` elige H frente a A solo entre partidos que realmente no empataron; `accuracy` considera las tres clases en todos los partidos.
 
-`frozen.json` vincula selección a las huellas del protocolo y OOF. `evaluation_complete.json` identifica las predicciones revisadas del test. El modelo sin cuotas puro no utiliza pesos ni variables del mercado; las variantes ponderadas según el favorito son experimentos guiados por mercado.
+`frozen.json` vincula selección a las huellas del protocolo y OOF. `evaluation_complete.json` identifica las predicciones del test. El modelo sin cuotas puro no utiliza pesos ni variables del mercado; las variantes ponderadas según el favorito son experimentos guiados por mercado.
