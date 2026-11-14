@@ -63,18 +63,20 @@ def preprocessing(reduction='all'):
     return make_pipeline(*steps)
 
 
+# Every grid goes from the most to the least regularised configuration: the
+# tie-break in choose_parameter keeps the first one within the tolerance.
 GRIDS = {
     'LR': [dict(C=c) for c in (.001, .05, 1.)],
     'HGB': [dict(max_depth=d, max_iter=n, learning_rate=.05) for d, n in ((1, 80), (2, 100), (3, 150))],
     'XGB': [dict(max_depth=d, n_estimators=n, learning_rate=.05) for d, n in ((1, 100), (2, 150), (3, 200))],
-    'RF': [dict(min_samples_leaf=n, max_features=.5) for n in (30, 100, 200)],
-    'MLP': [dict(hidden_layer_sizes=h, alpha=a, max_iter=100) for h, a in (((16,), 1.), ((32,), 1.), ((16,), 10.))],
+    'RF': [dict(min_samples_leaf=n, max_features=.5) for n in (200, 100, 30)],
+    'MLP': [dict(hidden_layer_sizes=h, alpha=a, max_iter=100) for h, a in (((16,), 10.), ((16,), 1.), ((32,), 1.))],
     'SVM': [dict(C=c, gamma=g) for c, g in ((.1, .001), (1., .001), (1., .01))],
     'GD_LIN': [dict(dummy=0)],
-    'GD_RF': [dict(min_samples_leaf=n) for n in (50, 100)],
+    'GD_RF': [dict(min_samples_leaf=n) for n in (100, 50)],
     'GD_HGB': [dict(max_depth=d, max_iter=100) for d in (1, 2)],
     'GD_SVR': [dict(C=c) for c in (.1, 1.)],
-    'GD_ALL': [dict(min_samples_leaf=n, max_depth=2, max_iter=100) for n in (50, 100)],
+    'GD_ALL': [dict(min_samples_leaf=n, max_depth=2, max_iter=100) for n in (100, 50)],
 }
 PRIORITY = {n: i for i, n in enumerate(['LR', 'HGB', 'XGB', 'RF', 'MLP', 'SVM',
                                        'GD_LIN', 'GD_HGB', 'GD_RF', 'GD_SVR', 'GD_ALL',

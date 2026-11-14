@@ -83,15 +83,15 @@ Los esquemas data-centric mantienen factores 2/3/5, igualdad de peso acierto/fal
 
 ## Uso de ambos modelos
 
-Resultados de la ejecución `39622169225decc0` (menor log loss es mejor):
+Resultados de la ejecución `146e0afe9b28051c` (menor log loss es mejor):
 
 | Modelo / referencia | Validación temporal | Test 2024/25–2025/26 |
 |---|---:|---:|
 | Consenso directo | 0,966435 | 0,966804 |
 | Con cuotas: LR de referencia | **0,965199** | **0,965034** |
-| Sin cuotas: promedio de ocho predictores | 0,977599 | 0,979290 |
+| Sin cuotas: promedio de ocho predictores | 0,977711 | 0,979070 |
 
-El ensemble sin cuotas mejora frente a la LR con historia y plantilla: diferencia de log loss −0,001061, IC 95% [−0,002022; −0,000101], p ajustado 0,036 en validación. Con cuotas, el ensemble ponderado no mejora claramente la LR de referencia. El modelo sin cuotas alcanza el 89,4% de la reducción de pérdida del consenso respecto al prior en validación; esta razón no mide un porcentaje de toda la información del mercado. Ninguna rama demuestra rentabilidad de apuestas con este protocolo.
+El promedio sin cuotas reduce la pérdida observada frente a la LR con historia y plantilla: diferencia de log loss −0,000863, IC 95% [−0,001828; 0,000093], p ajustado 0,089 en validación. El intervalo incluye cero: esa mejora no es estadísticamente concluyente. El ensemble ponderado obtiene una pérdida algo menor (0,977443), pero el promedio queda a menos de 0,0005 y se elige por simplicidad. Con cuotas, el ensemble ponderado no mejora claramente la LR de referencia. El modelo sin cuotas alcanza el 89,3% de la reducción de pérdida del consenso respecto al prior en validación; esta razón no mide un porcentaje de toda la información del mercado. Ninguna rama demuestra rentabilidad de apuestas con este protocolo.
 
 Las salidas vigentes incluyen `modelo_con_cuotas.joblib` y `modelo_sin_cuotas.joblib`, sus metadatos JSON, variables exactas y predicciones enlazadas por identificador. La API `predict_proba(frame)` valida el esquema. El ejemplo siguiente reconstruye las variables de un partido usando solo resultados anteriores:
 
@@ -100,7 +100,11 @@ Las salidas vigentes incluyen `modelo_con_cuotas.joblib` y `modelo_sin_cuotas.jo
 .venv/bin/python scripts/predict.py --branch con --date 2026-11-15 --league E0 --home Arsenal --away Chelsea --quotes '{"B365":[2.1,3.5,3.6],"BW":[2.05,3.4,3.7]}'
 ```
 
+El script rechaza clubes mal escritos (sugiere el nombre parecido; `--allow-new` admite un club sin partidos previos en esa liga) y fechas iguales o anteriores al último partido con que se entrenó el modelo, porque serían predicciones retrospectivas. Cada evaluación guardada registra la huella de todos sus resultados y se rechaza si alguno cambia después.
+
 El ejemplo no incorpora partidos nuevos automáticamente: la historia disponible termina donde terminan los crudos congelados. Para producción hacen falta historia actualizada y un protocolo futuro independiente. La salida incluye probabilidades y **cuotas justas** 1/P, sin margen comercial; no es recomendación de apuestas.
+
+Los nombres de equipos desconocidos se rechazan y se sugieren coincidencias cercanas. Usar `--allow-new` solo para un club sin historial en esa liga. Si todavía no hay partidos cargados de la temporada solicitada, la normalización de plantilla usa la última composición conocida de la liga, añadiendo los equipos del encuentro; es una aproximación hasta disponer de la composición actual.
 
 ## Entregables y trazabilidad
 

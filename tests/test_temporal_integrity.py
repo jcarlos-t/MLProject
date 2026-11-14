@@ -59,6 +59,45 @@ class TemporalTests(unittest.TestCase):
         b = self.features(m, self.squads())
         assert_frame_equal(a, b[b.match_id.isin(a.match_id)].reset_index(drop=True))
 
+    def test_league_reference_only_holds_clubs_of_that_season(self):
+        m = self.matches()
+        later = m.iloc[:2].assign(match_id=['90', '91'], Season=2122, HomeTeam=['A', 'C'], AwayTeam=['C', 'A'],
+                                  Date=pd.to_datetime(['2021-08-07', '2021-08-14']))
+        s = pd.DataFrame([dict(Div='E0', Team=t, available_at=pd.Timestamp('2020-07-01'), snapshot_year=2021,
+                               SQ=v, XI=v, SK_finishing=v) for t, v in [('A', 80.), ('B', 70.), ('C', 76.)]])
+        f = self.features(pd.concat([m, later], ignore_index=True), s).set_index('match_id')
+        # 2020/21 is played by A and B; 2021/22 by A and C. B's old snapshot must not count there.
+        self.assertAlmostEqual(f.loc['0', 'SQz_A'], (80-75)/np.std([80, 70], ddof=1))
+        self.assertAlmostEqual(f.loc['90', 'SQz_H'], (80-78)/np.std([80, 76], ddof=1))
+
+    def test_fixture_api_rejects_dates_the_model_was_trained_on(self):
+        from predict import predict_match
+        for date in ('2014-08-01', '2020-08-01'):
+            with self.subTest(date=date), self.assertRaisesRegex(ValueError, 'retrospectiva'):
+                predict_match(None, self.matches(), self.squads(), date=date, league='E0', home='A', away='B',
+                              trained_until='2020-08-01')
+
+    def test_fixture_api_rejects_misspelled_teams(self):
+        from predict import predict_match
+        args = dict(date='2020-09-10', league='E0', home='A', away='Bb', trained_until='2020-08-01')
+        with self.assertRaisesRegex(ValueError, 'Equipo desconocido'):
+            predict_match(None, self.matches(), self.squads(), **args)
+
+    def test_future_fixture_uses_full_last_known_league_for_normalization(self):
+        from predict import predict_match
+        class Recorder:
+            def predict_proba(self, frame):
+                self.features = frame.copy()
+                return np.array([[.4, .3, .3]])
+        history = self.matches()
+        history.loc[0, 'HomeTeam'] = 'C'
+        squads = pd.concat([self.squads(), self.squads().iloc[:1].assign(Team='C', SQ=60.)])
+        model = Recorder()
+        predict_match(model, history, squads, date='2021-08-01', league='E0', home='A', away='B',
+                      trained_until='2021-07-01')
+        self.assertAlmostEqual(model.features.loc[0, 'SQz_H'], 1.)
+        self.assertAlmostEqual(model.features.loc[0, 'SQz_A'], 0.)
+
     def test_market_quality_cutoff_and_partial_books(self):
         d = pd.DataFrame({'Date': [PIN_BAD_FROM-pd.Timedelta(days=1), PIN_BAD_FROM]})
         for prefix, val in [('PS', 2.), ('B365', 3.), ('BW', 3.), ('WH', 3.)]:
@@ -105,7 +144,7 @@ class TemporalTests(unittest.TestCase):
                 self.features=frame.copy()
                 return np.array([[.4,.3,.3]])
         a,b=Recorder(),Recorder();history=self.matches()
-        args=dict(date='2020-09-10',league='E0',home='A',away='B')
+        args=dict(date='2020-09-10',league='E0',home='A',away='B',trained_until='2020-08-01')
         predict_match(a,history,self.squads(),**args)
         altered=history.copy();altered.loc[altered.Date.ge(args['date']),['FTHG','FTAG','FTR']]=[8,0,'H']
         predict_match(b,altered,self.squads(),**args)

@@ -104,7 +104,15 @@ def squad_snapshots(availability):
     return pd.DataFrame(rows).sort_values(['available_at', 'Div', 'Team']).reset_index(drop=True)
 
 
-def historical_features(matches, squads):
+def league_members(matches):
+    """Clubs of each league-season. The composition is public before the first kickoff."""
+    members = defaultdict(set)
+    for div, season, home, away in matches[['Div', 'Season', 'HomeTeam', 'AwayTeam']].itertuples(index=False, name=None):
+        members[(div, season)].update((home, away))
+    return members
+
+
+def historical_features(matches, squads, members=None):
     """Read the state for a whole date before updating it with any of that date's scores."""
     hist = defaultdict(lambda: deque(maxlen=5))
     sums = defaultdict(lambda: np.zeros(len(STATS)))
@@ -118,14 +126,15 @@ def historical_features(matches, squads):
     cursor = 0
     out = []
     sk_cols = [c for c in squads if c.startswith('SK_')]
+    members = league_members(matches) if members is None else members
     for date, day in matches.groupby('Date', sort=True):
         while cursor < len(snapshot_rows) and snapshot_rows[cursor].available_at < date:
             r = snapshot_rows[cursor]
             current_squad[(r.Div, r.Team)] = r
             cursor += 1
-        league_sq = defaultdict(list)
-        for (div, _), r in current_squad.items():
-            league_sq[div].append(r.SQ)
+        # The league reference only holds clubs that play this league-season:
+        # relegated clubs keep their last snapshot but leave the comparison.
+        league_sq = {}
         for r in day.itertuples():
             keys = [(r.Div, r.HomeTeam), (r.Div, r.AwayTeam)]
             f = dict(match_id=r.match_id)
@@ -161,7 +170,11 @@ def historical_features(matches, squads):
                 f[f'{side}_snapshot_age'] = (date - sq.available_at).days if sq else np.nan
                 f[f'SQ_{side}'] = sq.SQ if sq else np.nan
                 f[f'XI_{side}'] = sq.XI if sq else np.nan
-                pool = league_sq[r.Div]
+                group = (r.Div, r.Season)
+                if group not in league_sq:
+                    league_sq[group] = [current_squad[(r.Div, t)].SQ for t in sorted(members.get(group, ()))
+                                        if (r.Div, t) in current_squad]
+                pool = league_sq[group]
                 sd = np.std(pool, ddof=1) if len(pool) > 1 else np.nan
                 f[f'SQz_{side}'] = (sq.SQ - np.mean(pool)) / sd if sq and sd > 0 else np.nan
             for name in ('Pts', 'GD', 'SOTD'):

@@ -197,7 +197,7 @@ def test_evaluation(parent, out, df, sets, frozen):
         goals = GoalsModel(sets[key], PROTOCOL['goal_alpha'][config['goal_index']]).fit(tr)
         detector = DrawDetector(branch, PROTOCOL['detector_C'][config['detector_index']]).fit(tr)
         for family, (p, pred) in candidates(te, pbase, goals.predict_rates(te), detector.predict_draw(te), config).items():
-            rows.append(export_predictions(te, branch, family, p, pred, 'test_revisado'))
+            rows.append(export_predictions(te, branch, family, p, pred, 'test'))
         family = frozen['selected'][branch]
         parameter = dict(boost=config['boost'], roster=config['roster'], poisson_band_1=1.,
                          poisson_band_tuned=config['band'], detector_threshold=config['threshold']).get(family)
@@ -242,7 +242,7 @@ def plot_results(table):
              'Banda ajustada', 'Detector probabilístico', 'Detector con umbral']
     fig, axes = plt.subplots(2, 2, figsize=(12, 7))
     for row, branch in enumerate(('con', 'sin')):
-        t = table[(table.branch.eq(branch)) & table.split.eq('test_revisado')].set_index('family').reindex(FAMILIES)
+        t = table[(table.branch.eq(branch)) & table.split.eq('test')].set_index('family').reindex(FAMILIES)
         color = '#0d9488' if branch == 'con' else '#2563eb'
         for col, (metric, title) in enumerate([('F1_macro', 'F1 macro'), ('accuracy', 'Accuracy 1X2')]):
             ax = axes[row, col]; ax.barh(short, t[metric], color=color)
@@ -291,7 +291,7 @@ def report(out, table, ci, frozen, predictions, df):
     for branch in ('con', 'sin'):
         lines += [f'## Rama {"con" if branch == "con" else "sin"} cuotas', '',
                   f'Familia elegida en validación: **{LABEL[frozen["selected"][branch]]}**.', '']
-        for split in ('validacion', 'test_revisado'):
+        for split in ('validacion', 'test'):
             lines += [f'### {split}', '', '| Método | F1 macro ↑ | F1 empate ↑ | Precisión empate | Recall empate | Accuracy ↑ | Predice empate | Log loss ↓ |',
                 '|---|---:|---:|---:|---:|---:|---:|---:|']
             t = table[(table.branch.eq(branch)) & table.split.eq(split)].set_index('family')
@@ -301,7 +301,7 @@ def report(out, table, ci, frozen, predictions, df):
             lines += ['']
         chosen = frozen['selected'][branch]
         if chosen != 'base':
-            for split in ('validacion', 'test_revisado'):
+            for split in ('validacion', 'test'):
                 r = ci[(ci.branch.eq(branch)) & ci.family.eq(chosen) & ci.split.eq(split)].iloc[0]
                 lines += [f'{split}: frente al original, Δ F1 macro **{r.delta_F1:+.4f}**, IC 95% [{r.F1_lo:+.4f}, {r.F1_hi:+.4f}]; '
                     f'Δ accuracy **{100*r.delta_accuracy:+.2f} puntos porcentuales**, IC [{100*r.acc_lo:+.2f}, {100*r.acc_hi:+.2f}].', '']

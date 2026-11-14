@@ -103,7 +103,7 @@ ax.set_xticks(range(len(sel)), sel, rotation=90); ax.set_yticks(range(len(sel)),
 for i in range(len(sel)):
     for j in range(len(sel)): ax.text(j, i, f'{m.iloc[i, j]:.2f}', ha='center', va='center', fontsize=7)
 fig.colorbar(im, ax=ax); plt.tight_layout(); plt.show()""",
- 'Hay 11 pares de variables con correlación mayor a 0,95 y 143 con más de 0,80; por ejemplo, la plantilla y el once titular (0,98) o las dos medidas de diferencia de goles reciente (1,00). Esto justifica la poda por correlación y la regularización. El precio de referencia también se correlaciona fuerte con las variables deportivas, lo que anticipa que añadirlas al precio aportará poco.'),
+ 'Hay 11 pares de variables con correlación mayor a 0,95 y 142 con más de 0,80; por ejemplo, la plantilla y el once titular (0,98) o las dos medidas de diferencia de goles reciente (1,00). Esto justifica la poda por correlación y la regularización. El precio de referencia también se correlaciona fuerte con las variables deportivas, lo que anticipa que añadirlas al precio aportará poco.'),
 ('Estabilidad de las variables en el tiempo',
  'El índice de estabilidad poblacional (PSI) compara la distribución de una variable en dos periodos. Como regla práctica, menos de 0,10 es estable y más de 0,25 es un cambio fuerte.',
  r"""def psi(a, b, bins=10):
@@ -172,7 +172,7 @@ with warnings.catch_warnings():
                        .predict_proba(dev.loc[dev.Season.eq(s), cols].to_numpy(float)) for s in FOLDS])
         rows.append(dict(variante=name, log_loss=log_loss(y_val, p, labels=[0, 1, 2])))
 t = pd.DataFrame(rows); t['delta'] = t.log_loss-t.log_loss.iloc[0]; display(t.round(5))""",
- 'Ninguna alternativa cambia el log loss en más de 0,0007. Quitar el indicador o podar en 0,80 daría una mejora de ese tamaño, parecida a la tolerancia de 0,0005 con la que tratamos dos modelos como equivalentes; usar la media o no escalar casi no cambia nada. Las decisiones no se modifican: se fijaron antes de evaluar, y este análisis muestra que el resultado no depende de ellas.'),
+ 'Ninguna alternativa cambia el log loss en más de 0,0006. Quitar el indicador reduce la pérdida en 0,00043 y podar en 0,80 en 0,00057, cambios cercanos a la tolerancia de 0,0005; usar la media o no escalar casi no cambia nada. Las decisiones no se modifican: se fijaron antes de evaluar, y este análisis muestra que el resultado no depende de ellas.'),
 ('MI y PCA dentro de un entrenamiento',
  'Vemos qué variables conserva la información mutua y cuánta varianza resumen los componentes principales, usando solo el entrenamiento anterior a 2023/24.',
  r"""from sklearn.feature_selection import mutual_info_classif
@@ -202,12 +202,12 @@ tabla = pd.DataFrame(rows).pivot(index='modelo', columns='temporada', values='lo
 fig, ax = plt.subplots(figsize=(9, 4)); im = ax.imshow(tabla, aspect='auto', cmap='viridis_r')
 ax.set_yticks(range(len(tabla)), tabla.index); ax.set_xticks(range(len(tabla.columns)), tabla.columns); fig.colorbar(im, ax=ax, label='log loss'); plt.show()
 puesto = tabla.groupby(tabla.index.str[:3]).rank(); display(puesto.mean(axis=1).round(2).rename('puesto medio dentro de su enfoque (1 = mejor)').to_frame())""",
- 'El orden es estable: la SVM es la peor familia de ambos enfoques en las seis temporadas y 2020/21 es la más difícil para todas. Con cuotas, el bosque aleatorio, HGB y XGBoost se reparten los primeros puestos y la red neuronal queda quinta; sin cuotas, XGBoost y la red neuronal son las mejores en promedio. Entre las cinco primeras familias las diferencias son de milésimas.'),
+ 'El orden es estable: la SVM es la peor familia de ambos enfoques en las seis temporadas y 2020/21 es la más difícil para todas. Con cuotas, el bosque aleatorio, HGB y XGBoost se reparten los primeros puestos y la red neuronal queda quinta; sin cuotas, XGBoost y el bosque aleatorio tienen los mejores puestos medios. Entre las cinco primeras familias las diferencias son de milésimas.'),
 ('Error de entrenamiento frente a validación',
  'Para hablar de sobreajuste hay que comparar el error en los datos con que se entrenó y en datos nuevos. Lo medimos en dos temporadas (2021/22 y 2023/24). La LR de solo precio, que tiene dos variables, sirve de referencia: su diferencia refleja solo que una temporada es más fácil o difícil que el pasado.',
  r"""from mlcore.report import training_gap
 brecha = training_gap(OUT); display(brecha.sort_values('brecha_extra').round(4))""",
- 'La LR de solo precio tiene una diferencia de −0,0070: las dos temporadas evaluadas fueron algo más fáciles que el pasado, y ese valor sirve de cero. Respecto a ella, la SVM casi no tiene brecha (0,002 con cuotas y 0,000 sin cuotas), pero su error ya es alto en el entrenamiento: su problema no es el sobreajuste. El bosque aleatorio tiene la mayor brecha (0,044 y 0,036) y aun así valida bien; la red neuronal con cuotas muestra 0,024. El sobreajuste existe en los modelos flexibles, pero no explica por sí solo el orden de la validación.'),
+ 'La LR de solo precio tiene una brecha de −0,0070 entre validación y entrenamiento; la usamos como referencia descriptiva de la diferencia entre periodos. Respecto a ella, la SVM casi no tiene brecha adicional (0,002 con cuotas y 0,000 sin cuotas), aunque su error de entrenamiento ya es alto. El bosque aleatorio tiene la mayor brecha adicional (0,021 y 0,024) y aun así valida bien; la red neuronal con cuotas muestra 0,011. Estas diferencias son compatibles con mayor sobreajuste en algunos modelos flexibles, pero también pueden reflejar cambios entre temporadas y no explican por sí solas el orden de validación.'),
 ('Clasificar el resultado o predecir goles',
  'Sin cuotas probamos dos estrategias: clasificar directamente H/D/A o predecir la diferencia de goles y convertirla en probabilidades. Las ordenamos por log loss de validación.',
  r"""%matplotlib inline
@@ -218,7 +218,7 @@ display(pd.DataFrame({'log_loss': sin.round(4), 'tipo': tipo}))
 color = {'regresión de goles': '#f59e0b', 'ensemble': '#0d9488', 'clasificación': '#2563eb'}
 fig, ax = plt.subplots(figsize=(8, 5)); ax.barh(sin.index[::-1], (sin-res['sin/LR'])[::-1], color=[color[t] for t in tipo[::-1]])
 ax.axvline(0, color='k', lw=.8); ax.set_xlabel('Δ log loss frente a sin/LR (negativo es mejor)'); plt.tight_layout(); plt.show()""",
- 'El promedio de regresores de diferencia de goles (0,9794) supera a la LR con todas las variables, a HGB y a la red neuronal y empata con el bosque aleatorio, pero queda detrás de la LR con historia y plantilla, de XGBoost y de los ensembles. Los regresores individuales quedan más atrás. Predecir goles es una alternativa válida, pero no mejor que clasificar directamente.'),
+ 'El promedio de regresores de diferencia de goles (0,9795) supera a la LR con todas las variables y a la red neuronal, queda muy cerca de HGB y del bosque aleatorio, y detrás de la LR con historia y plantilla, de XGBoost y de los ensembles de promedio simple y ponderado. Los regresores individuales quedan más atrás. Predecir goles es una alternativa válida, pero no mejor que clasificar directamente.'),
 ],
 '05_hiperparametros.ipynb': [
 ('Curvas de la rejilla',
@@ -235,7 +235,7 @@ for i, branch in enumerate(('con', 'sin')):
 plt.tight_layout(); plt.show()
 display(P[P.candidate.isin([b+'/'+f for b in ('con', 'sin') for f in fam])].pivot(index='candidate', columns='season', values='chosen'))
 for f in fam: print(f, GRIDS[f])""",
- 'La elección es bastante estable. HGB con cuotas elige siempre árboles de un nivel, la LR sin cuotas siempre la regularización más fuerte (C = 0,001) y XGBoost sin cuotas siempre profundidad 2. La red neuronal prefiere la penalización más alta (alpha = 10) en las primeras temporadas y cambia después. En los árboles potenciados nunca se elige la opción más profunda: la rejilla no se queda corta por el lado de la complejidad.'),
+ 'La elección es bastante estable. HGB con cuotas elige siempre árboles de un nivel, la LR sin cuotas siempre la regularización más fuerte (C = 0,001) y XGBoost sin cuotas siempre profundidad 2. El bosque aleatorio elige hojas de al menos 200 partidos en ambas ramas. La red neuronal sin cuotas elige siempre alpha = 10; con cuotas pasa de alpha = 10 a alpha = 1 en las dos últimas temporadas. En los árboles potenciados nunca se elige la opción más profunda: la rejilla no se queda corta por el lado de la complejidad.'),
 ('Sensibilidad de la LR a la regularización',
  'La rejilla de la LR solo tiene tres valores de C. Probamos un rango mucho más amplio en validación para comprobar que esos tres valores no dejan fuera una opción claramente mejor. No se usa para cambiar la selección.',
  r"""from mlcore.models import specifications, Predictor
@@ -251,7 +251,7 @@ with warnings.catch_warnings():
 sens = pd.DataFrame(rows).pivot(index='C', columns='modelo', values='log_loss'); display(sens.round(5))
 fig, ax = plt.subplots(figsize=(8, 3.2)); (sens-sens.min()).plot(ax=ax, logx=True, marker='o'); ax.set_ylabel('log loss − mínimo de cada modelo')
 ax.axvspan(.001, 1, alpha=.08, color='gray'); plt.show()""",
- 'La LR de solo precio es plana para C ≥ 0,01 (0,9652) y solo empeora con una regularización muy fuerte. Las LR sin cuotas tienen su mínimo en C = 0,001, un valor de la rejilla, y empeoran tanto con 0,0001 como con valores mayores: el óptimo queda dentro del rango explorado. La LR con cuotas y todas las variables tendría su mínimo en 0,01 (0,9693), que la rejilla no incluye, pero sigue lejos de la LR de solo precio. Ampliar la rejilla no cambiaría la selección.'),
+ 'La LR de solo precio es casi plana para C ≥ 0,01 (0,9652–0,9653) y solo empeora con una regularización muy fuerte. Las LR sin cuotas tienen su mínimo en C = 0,001, un valor de la rejilla, y empeoran tanto con 0,0001 como con valores mayores: el óptimo queda dentro del rango explorado. La LR con cuotas y todas las variables tendría su mínimo en 0,01 (0,9693), que la rejilla no incluye, pero sigue lejos de la LR de solo precio. Los valores adicionales de C probados no superan a los modelos seleccionados; este diagnóstico no modifica la selección congelada.'),
 ],
 '06_mercado.ipynb': [
 ('Margen de cada casa',
@@ -307,7 +307,7 @@ for j, ax in enumerate(axes):
     ax.plot([0, 1], [0, 1], ':', color='gray'); ax.set_title(['Local', 'Empate', 'Visitante'][j]); ax.set_xlabel('probabilidad predicha'); ax.set_xlim(0, t.p.max()+.08); ax.set_ylim(0, t.p.max()+.08)
 axes[0].set_ylabel('frecuencia observada'); axes[0].legend(fontsize=7); plt.tight_layout(); plt.show()
 E = pd.DataFrame(rows); display(E.pivot(index='serie', columns='clase', values='ECE_masa').round(4)); display(E.pivot(index='serie', columns='clase', values='ECE_ancho').round(4))""",
- 'La LR de precio tiene el menor error de calibración en las tres clases, con las dos formas de medirlo (grupos de igual tamaño o de igual ancho). La LR sin cuotas es la peor calibrada en victoria local y empate, y queda entre las otras dos en victoria visitante.'),
+ 'La LR de precio tiene el menor error de calibración en las tres clases, con las dos formas de medirlo (grupos de igual tamaño o de igual ancho). La LR sin cuotas tiene el mayor ECE en victoria local; en empate queda entre las otras dos con grupos de igual tamaño y es la peor con grupos de igual ancho. En victoria visitante queda entre ambas referencias.'),
 ('Bootstrap por bloques frente a bootstrap simple',
  'Los partidos de una misma semana no son independientes. Comparamos el intervalo que se obtiene remuestreando semanas completas con el que saldría remuestreando partidos sueltos.',
  r"""from mlcore.metrics import compare, losses
@@ -331,14 +331,14 @@ for name in ('con/LR_REF', 'sin/LR_plantilla'):
             p = Predictor(specs[name], dict(C=.05)).fit(df[df.Season.isin(seasons)]).predict_proba(obj)
             rows.append(dict(modelo=name, esquema=esquema, temporada=s, log_loss=log_loss(obj.y, p, labels=[0, 1, 2])))
 t = pd.DataFrame(rows).pivot_table(index=['modelo', 'esquema'], columns='temporada', values='log_loss'); t['media'] = t.mean(axis=1); display(t.round(4))""",
- 'Entrenar con todo el pasado es igual o mejor que usar solo tres temporadas: con cuotas la diferencia es mínima (0,9651 frente a 0,9655) y sin cuotas la ventana creciente gana por 0,0011, sobre todo en las dos últimas temporadas. Los datos antiguos siguen siendo útiles, lo que coincide con la estabilidad de las variables vista en el cuaderno 02.'),
+ 'Entrenar con todo el pasado es igual o mejor que usar solo tres temporadas: con cuotas la diferencia es mínima (0,9651 frente a 0,9655) y sin cuotas la ventana creciente gana por 0,0012, sobre todo en las dos últimas temporadas. Los datos antiguos siguen siendo útiles, lo que coincide con la estabilidad de las variables vista en el cuaderno 02.'),
 ('Log loss por liga',
  'Comprobamos si alguna liga es mucho más difícil de predecir y si la distancia entre el modelo sin cuotas y el mercado es parecida en todas.',
  r"""L = pd.DataFrame({'Div': va.Div.to_numpy(), 'Consenso': losses(va.y, series['Consenso directo']), 'Con cuotas': losses(va.y, series['Con cuotas (LR de precio)']),
                   'Sin cuotas': losses(va.y, series['Sin cuotas (LR historia y plantilla)'])}).groupby('Div').mean()
 L['con − consenso'] = L['Con cuotas']-L['Consenso']; L['sin − consenso'] = L['Sin cuotas']-L['Consenso']; display(L.round(4))
 L[['Consenso', 'Con cuotas', 'Sin cuotas']].plot.bar(figsize=(9, 3), ylim=(.85, 1.05)); plt.ylabel('log loss'); plt.show()""",
- 'La dificultad cambia mucho entre ligas: de 0,92 en Países Bajos y Portugal a 1,00 en Francia y Turquía. La LR de precio mejora al consenso en ocho de las nueve ligas (Francia es la excepción). La distancia de la LR sin cuotas al mercado va de 0,004 en Turquía a 0,020 en Italia.'),
+ 'La dificultad cambia mucho entre ligas: de 0,92 en Países Bajos y Portugal a 1,00 en Francia y Turquía. La LR de precio mejora al consenso en ocho de las nueve ligas (Francia es la excepción). La distancia de la LR sin cuotas al mercado va de 0,004 en Turquía a 0,019 en Italia.'),
 ('Por qué el empate casi nunca es la clase más probable',
  'Miramos la distribución de la probabilidad de empate que da el modelo con cuotas y si, donde el modelo dice más empate, de verdad hay más empates.',
  r"""p = series['Con cuotas (LR de precio)']
@@ -348,7 +348,7 @@ g = pd.DataFrame({'pD': p[:, 1], 'empate': va.y.eq(1).to_numpy()}); g['grupo'] =
 display(g.groupby('grupo', observed=True).agg(partidos=('pD', 'size'), pD_media=('pD', 'mean'), empates_reales=('empate', 'mean')).round(3))
 fig, ax = plt.subplots(figsize=(7, 2.8)); ax.hist(p[:, 1], bins=40, alpha=.6, label='P(empate)'); ax.hist(p[:, [0, 2]].max(1), bins=40, alpha=.6, label='P(victoria más probable)')
 ax.legend(); ax.set_xlabel('probabilidad'); plt.show()""",
- 'La probabilidad de empate casi nunca pasa de 0,31 (mediana 0,265), así que el empate es la clase más probable en solo el 0,11 % de los partidos, aunque ocurre en el 24,9 %. Aun así está bien calibrada: donde el modelo dice 15 % hay 14 % de empates y donde dice 31 % hay 31 %. El modelo distingue partidos con más y con menos empate; lo que no puede hacer es convertir el empate en el resultado más probable.'),
+ 'La mediana de la probabilidad de empate es 0,265 y su máximo es 0,464; incluso en el quinto de partidos con mayor probabilidad, la media es 0,307, así que el empate es la clase más probable en solo el 0,11 % de los partidos, aunque ocurre en el 24,9 %. Aun así está bien calibrada: donde el modelo dice 15 % hay 14 % de empates y donde dice 31 % hay 31 %. El modelo distingue partidos con más y con menos empate; elegir siempre la clase de mayor probabilidad deja muy pocos empates predichos.'),
 ],
 '08_pesos_ensembles.ipynb': [
 ('Recalibración de la variante balanceada',
@@ -381,7 +381,7 @@ for branch in ('con', 'sin'):
     fuera = c.where(~np.eye(len(c), dtype=bool)).stack(); media = losses(va.y, np.mean([aligned(base, k, va) for k in miembros], axis=0)).mean()
     print(f'{branch}: correlación media entre pérdidas {fuera.mean():.3f} (mínima {fuera.min():.3f}) | mejor miembro {L.mean().idxmin()} = {L.mean().min():.4f} | peor {L.mean().idxmax()} = {L.mean().max():.4f} | promedio simple = {media:.4f}')
     display(L.mean().sort_values().round(4).rename('log loss de cada miembro').to_frame().T)""",
- 'La correlación entre las pérdidas de los miembros es igual de alta en ambos enfoques (0,96), así que esa no es la diferencia. Lo que cambia es la calidad relativa: con cuotas hay un miembro claramente mejor (0,9652) y promediarlo con otros peores lo empeora (0,9673); sin cuotas siete miembros están entre 0,9787 y 0,9801 y su promedio (0,9776) mejora al mejor de ellos.'),
+ 'La correlación entre las pérdidas de los miembros es igual de alta en ambos enfoques (0,96), así que esa no es la diferencia. Lo que cambia es la calidad relativa: con cuotas hay un miembro claramente mejor (0,9652) y promediarlo con otros peores lo empeora (0,9674); sin cuotas siete miembros están entre 0,9786 y 0,9802 y el promedio de los ocho (0,9777) reduce la pérdida observada frente al mejor miembro. Esa reducción no es concluyente: el intervalo del 95 % frente a la LR de historia y plantilla incluye cero.'),
 ('Pesos a los partidos sorpresivos, temporada por temporada',
  'El resultado agregado dice que dar más peso a las sorpresas empeora. Comprobamos si eso pasa en todas las temporadas o solo en el total.',
  r"""from sklearn.metrics import log_loss
@@ -396,7 +396,7 @@ for cand in sorted(weighted.candidate.unique()):
 t = pd.DataFrame(rows); display(t.pivot_table(index=['modelo', 'esquema'], columns='temporada', values='delta').round(4))
 print('Combinaciones modelo/esquema/temporada que mejoran al entrenamiento sin pesos:', int((t.delta < 0).sum()), 'de', len(t))
 display(t[t.delta < 0].round(5))""",
- 'Con cuotas, todos los esquemas empeoran en las seis temporadas. Sin cuotas hay 11 combinaciones de 192 con una mejora pequeña (como mucho 0,0025), siempre con los esquemas suaves (balance y remuestreo) y entre 2018/19 y 2020/21. Los pesos fijos 2, 3 y 5 y los inversos empeoran siempre. En el agregado ninguna variante mejora al entrenamiento sin pesos. Estas variantes usan el mercado para definir los pesos, así que no forman parte del modelo deportivo puro.'),
+ 'Con cuotas, todos los esquemas empeoran en las seis temporadas. En las 192 combinaciones de ambas ramas hay 11 mejoras pequeñas, todas sin cuotas (como mucho 0,0026), siempre con los esquemas suaves (balance y remuestreo) y entre 2018/19 y 2020/21. Los pesos fijos 2, 3 y 5 y los inversos empeoran siempre. En el agregado ninguna variante mejora al entrenamiento sin pesos. Estas variantes usan el mercado para definir los pesos, así que no forman parte del modelo deportivo puro.'),
 ],
 '09_modelos_finales.ipynb': [
 ('Resultados por temporada y por liga',
@@ -419,7 +419,7 @@ for j, ax in enumerate(axes):
         ax.plot(t.p, t.o, 'o-', color=color, ms=3, label=name); rows.append(dict(serie=name, clase='HDA'[j], ECE=ece(p, te.y.eq(j))))
     ax.plot([0, 1], [0, 1], ':', color='gray'); ax.set_title(['Local', 'Empate', 'Visitante'][j]); ax.set_xlim(0, t.p.max()+.08); ax.set_ylim(0, t.p.max()+.08)
 axes[0].legend(fontsize=8); plt.tight_layout(); plt.show(); display(pd.DataFrame(rows).pivot(index='serie', columns='clase', values='ECE').round(4))""",
- 'En el test el modelo con cuotas vuelve a estar mejor calibrado que el consenso en las tres clases (por ejemplo, 0,021 frente a 0,027 en victoria local). El modelo sin cuotas tiene aquí el menor ECE; eso no significa que prediga mejor, porque su log loss es mayor: está bien calibrado, pero distingue peor unos partidos de otros.'),
+ 'En el test el modelo con cuotas vuelve a estar mejor calibrado que el consenso en las tres clases (por ejemplo, 0,021 frente a 0,027 en victoria local). El modelo sin cuotas tiene aquí el menor ECE agregado; eso no significa que prediga mejor, porque su log loss es mayor: está bien calibrado, pero distingue peor unos partidos de otros.'),
 ('Reglas de decisión para el empate',
  'El experimento adicional de empates cambia la regla con la que se elige la clase. Mostramos el modelo original y la regla elegida en cada enfoque.',
  r"""dr = pd.read_csv(ROOT/'docs/resultados_empates.csv')

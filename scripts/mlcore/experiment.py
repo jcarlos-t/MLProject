@@ -95,7 +95,8 @@ def choose_parameter(df, spec, season, out):
     for parameter in GRIDS[spec.family]:
         ll = np.mean([log_loss(df.loc[df.Season.eq(s), 'y'], cached_prediction(df, spec, parameter, s, out), labels=[0, 1, 2]) for s in inner])
         scores.append(float(ll))
-    # Grids are in increasing complexity (and increasing C for LR).
+    # Grids go from the most to the least regularised configuration, so the
+    # first one within the tolerance is the simplest of the near-ties.
     best = next(i for i, v in enumerate(scores) if v <= min(scores)+PROTOCOL['tolerance'])
     return GRIDS[spec.family][best], dict(inner=[int(s) for s in inner], scores=scores, chosen=best)
 
@@ -289,7 +290,7 @@ def freeze(out):
     frozen = dict(selected=chosen, protocol_sha=sha(out/'protocol.json'),
         oof_sha=sha(out/'oof_candidates.csv'), comparison_sha=sha(out/'model_comparison.csv'),
         test_status=PROTOCOL['test_status'], date=str(pd.Timestamp.now()),
-        note='Seleccion cerrada solo con train/val antes de generar las predicciones revisadas del test.')
+        note='Seleccion cerrada solo con train/val antes de generar las predicciones del test.')
     json_write(out/'frozen.json', frozen)
     return frozen
 
@@ -325,6 +326,22 @@ def fit_final(df, sets, selection, out):
     return EnsemblePredictor(branch, kind, models, w, meta)
 
 
+EVALUATION_OUTPUTS = ('final_metrics.csv', 'primary_comparisons.csv', 'by_season.csv', 'by_league.csv',
+    'backtest.csv', 'similarity.csv', 'validation_predictions.csv',
+    'modelo_con_cuotas.joblib', 'modelo_sin_cuotas.joblib', 'modelo_con_cuotas.json', 'modelo_sin_cuotas.json')
+
+
+def verify_evaluation_outputs(out, marker):
+    """A cached evaluation is reused only if every file it produced is byte-identical."""
+    recorded = marker.get('outputs_sha')
+    if not isinstance(recorded, dict) or 'final_metrics.csv' not in recorded:
+        raise RuntimeError('Evaluacion sin huellas de sus resultados')
+    for name in EVALUATION_OUTPUTS:
+        path = out/name
+        if path.exists() != (name in recorded) or (path.exists() and sha(path) != recorded[name]):
+            raise RuntimeError(f'Resultado modificado despues de evaluar: {name}')
+
+
 def evaluate(out):
     frozen = freeze(out)
     if sha(out/'protocol.json') != frozen['protocol_sha']:
@@ -336,6 +353,7 @@ def evaluate(out):
         if marker['frozen_sha'] != sha(out/'frozen.json'): raise RuntimeError('Test de otra seleccion')
         if marker['test_predictions_sha'] != sha(out/'test_predictions.csv'):
             raise RuntimeError('Predicciones de test modificadas despues de evaluar')
+        verify_evaluation_outputs(out, marker)
         return pd.read_csv(out/'final_metrics.csv')
     df, sets = read_data(out)
     tv, te = df[~df.Season.isin(TEST)], df[df.Season.isin(TEST)]
@@ -368,7 +386,7 @@ def evaluate(out):
     for name, p in pp_val.items(): vals.append(prediction_frame(val, p, name))
     pd.concat(vals).to_csv(out/'validation_predictions.csv', index=False)
     comparisons, bt, by_season, by_league = [], [], [], []
-    for split, frame, probs in [('validacion', val, pp_val), ('test_revisado', te, pp_test)]:
+    for split, frame, probs in [('validacion', val, pp_val), ('test', te, pp_test)]:
         for name, p in probs.items():
             table.append(dict(split=split, candidate=name, **metrics(frame.y, p)))
             for season in frame.Season.unique():
@@ -395,7 +413,7 @@ def evaluate(out):
     pd.DataFrame(bt).to_csv(out/'backtest.csv', index=False)
     # Similarity to the two references is explicitly labeled, never conflated.
     similarity = []
-    for split, frame, probs in [('validacion', val, pp_val), ('test_revisado', te, pp_test)]:
+    for split, frame, probs in [('validacion', val, pp_val), ('test', te, pp_test)]:
         nm = probs['modelo_sin']; ll0 = log_loss(frame.y, probs['prior']); lln = log_loss(frame.y, nm)
         for name in ('consenso', 'Pinnacle_respaldo'):
             market = probs[name]
@@ -406,7 +424,8 @@ def evaluate(out):
                 fraccion_ganancia_prior=float((ll0-lln)/(ll0-log_loss(frame.y, market)))))
     pd.DataFrame(similarity).to_csv(out/'similarity.csv', index=False)
     json_write(out/'evaluation_complete.json', dict(frozen_sha=sha(out/'frozen.json'),
-        test_predictions_sha=sha(out/'test_predictions.csv'), note=PROTOCOL['test_status']))
+        test_predictions_sha=sha(out/'test_predictions.csv'), note=PROTOCOL['test_status'],
+        outputs_sha={name: sha(out/name) for name in EVALUATION_OUTPUTS}))
     return pd.DataFrame(table)
 
 

@@ -1,6 +1,6 @@
 # Diagnósticos de resultados
 
-Ejecución: `39622169225decc0`.
+Ejecución: `146e0afe9b28051c`.
 
 ## Consenso contra Bet365
 
@@ -34,12 +34,12 @@ Comparación en las mismas cinco temporadas: 2019/20–2023/24. No comparar dire
             candidate       variant  log_loss  ECE_masa
  con/LR/balance_recal       balance  0.969014  0.022972
  con/LR/balance_recal balance_recal  0.967469  0.008830
-con/HGB/balance_recal       balance  0.973792  0.029489
-con/HGB/balance_recal balance_recal  0.970077  0.011652
- sin/LR/balance_recal       balance  0.981496  0.015728
- sin/LR/balance_recal balance_recal  0.981767  0.011405
-sin/HGB/balance_recal       balance  0.981877  0.020236
-sin/HGB/balance_recal balance_recal  0.981091  0.009908
+con/HGB/balance_recal       balance  0.973753  0.029382
+con/HGB/balance_recal balance_recal  0.969998  0.011798
+ sin/LR/balance_recal       balance  0.981444  0.015815
+ sin/LR/balance_recal balance_recal  0.981703  0.011496
+sin/HGB/balance_recal       balance  0.981927  0.019851
+sin/HGB/balance_recal balance_recal  0.981190  0.008693
 ```
 
 ## Disponibilidad y calibración

@@ -21,16 +21,28 @@ class ArtifactIntegrityTests(unittest.TestCase):
         (out/'frozen.json').write_text(json.dumps(frozen))
         (out/'evaluation_complete.json').write_text(json.dumps({
             'frozen_sha': sha(out/'frozen.json'),
-            'test_predictions_sha': sha(out/'test_predictions.csv')}))
+            'test_predictions_sha': sha(out/'test_predictions.csv'),
+            'outputs_sha': {'final_metrics.csv': sha(out/'final_metrics.csv')}}))
 
     def test_cached_evaluation_rejects_modified_predictions_and_protocol(self):
-        for name in ('test_predictions.csv', 'protocol.json'):
+        for name in ('test_predictions.csv', 'protocol.json', 'final_metrics.csv'):
             with self.subTest(name=name), tempfile.TemporaryDirectory() as folder:
                 out = Path(folder); self.fixture(out)
                 self.assertEqual(len(evaluate(out)), 1)
                 (out/name).write_text('changed')
                 with self.assertRaises(RuntimeError):
                     evaluate(out)
+
+    def test_cached_evaluation_rejects_unlisted_and_unfingerprinted_results(self):
+        with tempfile.TemporaryDirectory() as folder:
+            out = Path(folder); self.fixture(out)
+            (out/'backtest.csv').write_text('appeared later')
+            with self.assertRaises(RuntimeError): evaluate(out)
+        with tempfile.TemporaryDirectory() as folder:
+            out = Path(folder); self.fixture(out)
+            marker = json.loads((out/'evaluation_complete.json').read_text()); del marker['outputs_sha']
+            (out/'evaluation_complete.json').write_text(json.dumps(marker))
+            with self.assertRaises(RuntimeError): evaluate(out)
 
     def test_report_templates_are_self_contained(self):
         root = Path(__file__).resolve().parents[1]

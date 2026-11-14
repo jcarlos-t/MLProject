@@ -35,7 +35,7 @@ Los prefijos H/A indican el lado del equipo. Todos los partidos de una fecha lee
 
 - `SQ_H`, `SQ_DIF`: media de los once mejores ratings del plantel disponible y diferencia entre equipos.
 - `XI_H`, `XI_DIF`: media de los titulares asignados por el juego y diferencia. No son alineaciones de cada partido.
-- `SQz_H`, `SQz_DIF`: normalización respecto a clubes con snapshots ya disponibles, una vez por club, no ponderada por partidos futuros.
+- `SQz_H`, `SQz_DIF`: valoración de plantilla en desviaciones estándar respecto a los clubes que disputan esa liga en esa temporada, usando el último snapshot ya disponible de cada uno, una vez por club. Los clubes que ya no están en la liga no entran en la comparación.
 - `SK_*`: 33 diferencias de habilidades; las de campo promedian el top-4 del once del juego, las de portero su portero. Las ausencias se conservan hasta el imputador de entrenamiento.
 - `H_snapshot_at`, `A_snapshot_at`: fecha verificable del snapshot utilizado. Debe ser estrictamente anterior al partido; campo de trazabilidad, no predictor.
 - `H_snapshot_age`, `A_snapshot_age`: antigüedad en días, para diagnóstico de cobertura, no utilizadas como predictores.
