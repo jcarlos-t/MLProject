@@ -327,11 +327,15 @@ def fit_final(df, sets, selection, out):
 
 def evaluate(out):
     frozen = freeze(out)
+    if sha(out/'protocol.json') != frozen['protocol_sha']:
+        raise RuntimeError('Protocolo modificado despues de congelar')
     if sha(out/'oof_candidates.csv') != frozen['oof_sha'] or sha(out/'model_comparison.csv') != frozen['comparison_sha']:
         raise RuntimeError('Seleccion modificada despues de congelar')
     if (out/'evaluation_complete.json').exists():
         marker = json.loads((out/'evaluation_complete.json').read_text())
         if marker['frozen_sha'] != sha(out/'frozen.json'): raise RuntimeError('Test de otra seleccion')
+        if marker['test_predictions_sha'] != sha(out/'test_predictions.csv'):
+            raise RuntimeError('Predicciones de test modificadas despues de evaluar')
         return pd.read_csv(out/'final_metrics.csv')
     df, sets = read_data(out)
     tv, te = df[~df.Season.isin(TEST)], df[df.Season.isin(TEST)]

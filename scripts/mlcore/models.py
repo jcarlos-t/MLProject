@@ -170,7 +170,6 @@ class Predictor:
         y = frame.y.to_numpy(int)
         if self.spec.family == 'SVM' or self.spec.family.startswith('GD_'):
             # Cut by date, so the same date can never appear on both sides.
-            cut = dates.iloc[int(.8*len(dates))] if self.spec.family == 'SVM' else frame.Date.max()
             if self.spec.family.startswith('GD_'):
                 cal_season = frame.Season.max()
                 base = frame[frame.Season.lt(cal_season)]

@@ -106,7 +106,7 @@ Bloque & N.º & Ejemplos \\
 Identificación & 5 & liga, temporada, fecha, equipos \\
 Resultado (objetivo) & 3 & H/D/A y goles de cada equipo \\
 Estadísticas del partido & 12 & tiros, córners, faltas, tarjetas (solo para el historial) \\
-Cuotas & 4 casas & Bet365, Bet\&Win, Pinnacle y William Hill \\
+Cuotas & Hasta 4 casas & Bet365, Bet\&Win, Pinnacle y William Hill \\
 Historia (construida) & 38 & Elo, forma, medias recientes, descanso \\
 Plantilla & 6 & valoración media del once y de la plantilla \\
 Habilidades & 33 & definición, regate, pase, defensa, portero \\
@@ -125,7 +125,7 @@ La Fig.~\ref{fig:datos} resume los datos. La victoria local es el resultado más
 \end{figure}
 
 \subsection{Calidad de los datos}
-\textbf{Datos faltantes.} La Fig.~\ref{fig:nulos} muestra el porcentaje de partidos sin dato en cada columna. Las cuatro casas que usamos (en verde) casi siempre tienen cuotas; otras casas, como Ladbrokes o Interwetten, faltan en muchos partidos y se descartan. Los faltantes no son aleatorios: dependen de la casa y de la temporada. Pinnacle falta en el 52\,\% de 2025/26 y William Hill en el 100\,\%, porque dejaron de publicarse en la fuente. Por eso las cuotas \emph{no se imputan}: inventar un precio que nunca existió sería engañoso. Las estadísticas del partido faltan en el 9{,}7\,\% de los casos, concentradas en 4 ligas cuyas primeras temporadas no las publican; el modelo las recibe como promedios del pasado, con su indicador de dato faltante. El árbitro y la hora se descartan porque faltan en la mayoría de partidos.
+\textbf{Datos faltantes.} La Fig.~\ref{fig:nulos} muestra el porcentaje de partidos sin dato en cada columna. Las cuatro casas consideradas (en verde) tienen cobertura variable; otras casas, como Ladbrokes o Interwetten, faltan en muchos partidos y se descartan. Los faltantes no son aleatorios: dependen de la casa y de la temporada. Pinnacle falta en el 52\,\% de 2025/26 y William Hill en el 100\,\%, respectivamente. William Hill dejó de publicarse; Pinnacle se excluye desde el 23/07/2025 por la advertencia de calidad de la fuente, incluso cuando tiene precios. Por eso las cuotas \emph{no se imputan}: inventar un precio que nunca existió sería engañoso. Las estadísticas del partido faltan en el 9{,}7\,\% de los casos, concentradas en 4 ligas cuyas primeras temporadas no las publican; el modelo las recibe como promedios del pasado, con su indicador de dato faltante. El árbitro y la hora se descartan porque faltan en la mayoría de partidos.
 \begin{figure}[!htb]
 \centering
 \includegraphics[width=\columnwidth]{inf_nulos.png}
@@ -133,7 +133,7 @@ La Fig.~\ref{fig:datos} resume los datos. La victoria local es el resultado más
 \label{fig:nulos}
 \end{figure}
 
-\textbf{Valores extremos.} La Fig.~\ref{fig:extremos} muestra la dispersión de goles, tiros y cuotas. Con la regla del rango intercuartílico (IQR), que marca como atípico lo que está muy lejos de la mitad central de los datos, aparecen pocos casos en goles y tiros (a lo sumo el 1{,}4\,\%) y más en las cuotas (9{,}3\,\% en la del visitante), con valores de hasta 13 goles y cuotas de 41. No son errores: son goleadas y partidos muy desiguales, por ejemplo un líder contra el último. Por eso no se eliminan ni se recortan.
+\textbf{Valores extremos.} La Fig.~\ref{fig:extremos} muestra la dispersión de goles, tiros y cuotas. Con la regla del rango intercuartílico (IQR), que marca como atípico lo que está muy lejos de la mitad central de los datos, aparecen pocos casos en goles y tiros (a lo sumo el 1{,}4\,\%) y más en las cuotas (9{,}3\,\% en la del visitante), con valores de hasta 13 goles y cuotas de 41. Estos extremos pueden corresponder a goleadas y partidos muy desiguales; su magnitud por sí sola no demuestra que sean errores. Por eso no se eliminan ni se recortan.
 \begin{figure}[!htb]
 \centering
 \includegraphics[width=\columnwidth]{inf_extremos.png}
@@ -150,7 +150,7 @@ Las cuotas anticipan el resultado. En la Fig.~\ref{fig:cuotasres} (izquierda), l
 \label{fig:cuotasres}
 \end{figure}
 
-La Fig.~\ref{fig:corr} muestra la correlación entre las variables principales, todas expresadas como diferencia entre local y visitante. Hay tres observaciones. Primero, las variables deportivas están muy relacionadas entre sí: el Elo y los puntos recientes tienen correlación 0{,}95, y el once titular y la plantilla completa, 0{,}98; por eso muchas son redundantes y conviene regularizar o reducir variables. Segundo, el favoritismo según las cuotas se correlaciona fuerte con el Elo (0{,}92) y con el once titular (0{,}87): el mercado ya incorpora la información deportiva, lo que anticipa que añadirla al precio aportará poco. Tercero, el margen de la casa no se relaciona con ninguna variable, así que no informa sobre el resultado. Además, las probabilidades de las cuatro casas casi coinciden (correlación mínima de 0{,}997), por lo que conviene resumirlas en un solo consenso.
+La Fig.~\ref{fig:corr} muestra la correlación entre las variables principales, todas expresadas como diferencia entre local y visitante. Hay tres observaciones. Primero, las variables deportivas están muy relacionadas entre sí: el Elo y los puntos recientes tienen correlación 0{,}95, y el once titular y la plantilla completa, 0{,}98; por eso muchas son redundantes y conviene regularizar o reducir variables. Segundo, el favoritismo según las cuotas se correlaciona fuerte con el Elo (0{,}92) y con el once titular (0{,}87): el mercado ya incorpora la información deportiva, lo que anticipa que añadirla al precio aportará poco. Tercero, el margen de la casa muestra baja correlación lineal con estas variables; esto no descarta asociaciones no lineales ni demuestra ausencia de información sobre el resultado. Además, las probabilidades de las cuatro casas casi coinciden (correlación mínima de 0{,}997), por lo que conviene resumirlas en un solo consenso.
 \begin{figure}[!htb]
 \centering
 \includegraphics[width=\columnwidth]{inf_correlacion.png}
@@ -250,13 +250,13 @@ En cada enfoque se elige el modelo con menor log loss en validación. Si dos mod
 
 \textbf{Métricas.} El log loss es la métrica de selección porque mide directamente la calidad de la probabilidad y es una regla de puntuación \emph{propia}: un modelo obtiene su mejor valor esperado solo si dice las probabilidades que realmente cree, de modo que no se puede mejorar exagerando ni suavizando. El accuracy y el F1 solo miran la clase elegida e ignoran la confianza; el AUC mide la ordenación y el ECE la calibración. Por eso se reportan como complemento, no para elegir modelos.
 
-Para saber si una diferencia es real o fruto del azar se usa \emph{bootstrap}: se toman 5.000 muestras al azar de semanas completas de partidos y en cada una se recalcula la diferencia de log loss. Con ellas se obtiene un intervalo de confianza del 95\,\%; si no incluye el cero, la diferencia es consistente. Se remuestrean semanas y no partidos sueltos porque los partidos de una misma jornada comparten condiciones. Como se hacen varias comparaciones a la vez, los valores $p$ se corrigen con el método de Benjamini y Hochberg~\cite{benjamini1995}.
+Para saber si una diferencia es real o fruto del azar se usa \emph{bootstrap}: se toman 5.000 muestras al azar de semanas completas de partidos y en cada una se recalcula la diferencia de log loss. Con ellas se obtiene un intervalo de confianza del 95\,\%; si no incluye el cero, la diferencia es consistente. Se remuestrean semanas y no partidos sueltos porque los partidos de una misma jornada comparten condiciones. Los contrastes de validación usan las mismas predicciones con las que se eligió el modelo, así que pueden ser algo optimistas y se leen como diagnósticos de desarrollo. Como se hacen varias comparaciones a la vez, los valores $p$ se corrigen con el método de Benjamini y Hochberg~\cite{benjamini1995}.
 
 \FloatBarrier
 \section{Resultados y análisis}
 \label{sec:resultados}
 \subsection{Con cuotas: ¿se puede mejorar al mercado? (P1)}
-El Cuadro~\ref{tab:familias} muestra el log loss de validación de todos los modelos. Con cuotas, el mejor es la LR que solo recibe los dos números del precio (0{,}9652). Los modelos que además reciben variables deportivas empeoran: esa información ya está incluida en el precio y añadirla solo aporta ruido. Los modelos más flexibles, como la red neuronal y la SVM, son los peores, porque se ajustan demasiado a los datos de entrenamiento.
+El Cuadro~\ref{tab:familias} muestra el log loss de validación de todos los modelos. Con cuotas, el mejor es la LR que solo recibe los dos números del precio (0{,}9652). Los modelos que además reciben variables deportivas no la superan, y tampoco la red neuronal ni la SVM, que es la peor de todas. Para saber si la causa es el sobreajuste comparamos el error de entrenamiento con el de validación en dos temporadas, tomando como referencia la LR de solo precio. La SVM casi no muestra diferencia (0{,}002): su error ya es alto en el entrenamiento, así que su problema no es el sobreajuste. La red neuronal y el bosque aleatorio sí se ajustan más al entrenamiento (0{,}024 y 0{,}044), aunque el bosque valida bien.
 \begin{table}[!htb]
 \caption{Log loss de validación (seis temporadas) de cada modelo. Menor es mejor.}
 \centering\footnotesize
@@ -281,7 +281,7 @@ Diferencia de goles & -- & 0{,}9794 \\
 \label{tab:familias}
 \end{table}
 
-El Cuadro~\ref{tab:final} compara los modelos elegidos con los dos baselines, el prior y el mercado, en validación y en test. La LR con cuotas obtiene el menor log loss en ambos periodos. La mejora frente al consenso parece pequeña, pero es consistente: el Cuadro~\ref{tab:contrastes} muestra que en validación su intervalo de confianza no incluye el cero y que el modelo mejora en 5 de las 6 temporadas; en test ocurre lo mismo. Frente a Pinnacle, la casa más precisa, la mejora es menor y en validación no es concluyente.
+El Cuadro~\ref{tab:final} compara los modelos elegidos con los dos baselines, el prior y el mercado, en validación y en test. La LR con cuotas obtiene el menor log loss en ambos periodos. La mejora frente al consenso parece pequeña, pero es consistente: el Cuadro~\ref{tab:contrastes} muestra que en validación su intervalo de confianza no incluye el cero y que el modelo mejora en 5 de las 6 temporadas; en test ocurre lo mismo. Frente a la referencia Pinnacle con respaldo del consenso, la mejora es menor y en validación no es concluyente.
 \begin{table}[!htb]
 \caption{Modelos elegidos frente a las referencias. AUC y accuracy en test.}
 \centering\footnotesize
@@ -300,7 +300,7 @@ Modelo sin cuotas & 0{,}9776 & 0{,}9793 & 0{,}668 & 52{,}4 \\
 \end{table}
 
 \begin{table}[!htb]
-\caption{Diferencia de log loss e intervalo de confianza del 95\,\%. Un valor negativo favorece al primer modelo.}
+\caption{Diferencia de log loss e intervalo del 95\,\%. Un valor negativo favorece al primer modelo. La referencia mixta usa Pinnacle fiable y, en su ausencia, consenso; en 2025/26 usa solo consenso.}
 \centering\footnotesize
 \begin{tabular}{llrr}
 \toprule
@@ -308,7 +308,7 @@ Comparación &  & $\Delta$ LL & IC 95\,\% \\
 \midrule
 Con cuotas vs. consenso & Val. & $-$0{,}0012 & [$-$0{,}0020; $-$0{,}0005] \\
  & Test & $-$0{,}0018 & [$-$0{,}0029; $-$0{,}0007] \\
-Con cuotas vs. Pinnacle & Val. & $-$0{,}0005 & [$-$0{,}0011; 0{,}0001] \\
+Con cuotas vs. ref. mixta & Val. & $-$0{,}0005 & [$-$0{,}0011; 0{,}0001] \\
  & Test & $-$0{,}0012 & [$-$0{,}0022; $-$0{,}0003] \\
 Sin cuotas vs. consenso & Val. & 0{,}0112 & [0{,}0091; 0{,}0133] \\
  & Test & 0{,}0125 & [0{,}0087; 0{,}0166] \\
@@ -317,7 +317,7 @@ Sin cuotas vs. consenso & Val. & 0{,}0112 & [0{,}0091; 0{,}0133] \\
 \label{tab:contrastes}
 \end{table}
 
-¿De dónde viene la mejora? El AUC del modelo (0{,}684) es prácticamente igual al del consenso (0{,}684): ambos ordenan los partidos de la misma forma, y por eso el accuracy también es casi igual. Lo que cambia es la calibración: el ECE baja de 0{,}0143 a 0{,}0085. La Fig.~\ref{fig:cal} lo muestra: los puntos de un modelo bien calibrado caen sobre la diagonal, es decir, cuando dice 40\,\% el resultado ocurre cerca del 40\,\% de las veces. En resumen, el modelo con cuotas no descubre información nueva; ajusta ligeramente las probabilidades del mercado para que coincidan mejor con las frecuencias reales.
+¿De dónde viene la mejora? El AUC del modelo (0{,}684) es prácticamente igual al del consenso (0{,}684): su capacidad agregada de ordenación es similar, y por eso el accuracy también es casi igual. Lo que cambia es la calibración: el ECE baja de 0{,}0143 a 0{,}0085. La Fig.~\ref{fig:cal} lo muestra: los puntos de un modelo bien calibrado caen sobre la diagonal, es decir, cuando dice 40\,\% el resultado ocurre cerca del 40\,\% de las veces. En resumen, el modelo con cuotas no descubre información nueva; ajusta ligeramente las probabilidades del mercado para que coincidan mejor con las frecuencias reales.
 \begin{figure}[!htb]
 \centering
 \includegraphics[width=\columnwidth]{inf_calibracion.png}
@@ -326,9 +326,9 @@ Sin cuotas vs. consenso & Val. & 0{,}0112 & [0{,}0091; 0{,}0133] \\
 \end{figure}
 
 \subsection{Sin cuotas: ¿cuánto se acerca al mercado? (P2)}
-Sin cuotas, el modelo elegido es el promedio de ocho modelos, con log loss 0{,}9776 en validación y 0{,}9793 en test (Cuadros~\ref{tab:familias} y~\ref{tab:final}). Es mejor que cualquier modelo individual, pero queda claramente detrás del mercado, 0{,}0112 por encima en validación. Predecir la diferencia de goles no resultó mejor que clasificar directamente el resultado.
+Sin cuotas, el modelo elegido es el promedio de ocho modelos, con log loss 0{,}9776 en validación y 0{,}9793 en test (Cuadros~\ref{tab:familias} y~\ref{tab:final}). Es mejor que cualquier modelo individual, pero queda claramente detrás del mercado, 0{,}0112 por encima en validación. El promedio de regresores de diferencia de goles supera a varios clasificadores individuales, pero no a los mejores clasificadores ni al ensemble elegido.
 
-La Fig.~\ref{fig:ablacion} muestra qué información aporta cada grupo de variables. Con solo el historial de resultados, la LR obtiene 0{,}9798; al añadir la valoración de la plantilla baja a 0{,}9787. Añadir las habilidades individuales no mejora más (0{,}9801): repiten en buena parte lo que ya dice la valoración general y, al ser muchas variables, agregan ruido.
+La Fig.~\ref{fig:ablacion} muestra qué información aporta cada grupo de variables. Con solo el historial de resultados, la LR obtiene 0{,}9798; al añadir la valoración de la plantilla baja a 0{,}9787. Añadir las habilidades individuales no mejora más (0{,}9801): este resultado es compatible con redundancia respecto a la valoración general, sin demostrar que esa sea la única causa.
 \begin{figure}[!htb]
 \centering
 \includegraphics[width=\columnwidth]{inf_ablacion.png}
@@ -356,7 +356,7 @@ Para saber qué información usa cada modelo, desordenamos al azar un grupo de v
 \subsection{¿Ayudan las técnicas para mejorar un modelo? (P3)}
 La Fig.~\ref{fig:mejoras} compara cada técnica con la LR que usa todas las variables; las barras negativas indican mejora. Con cuotas, la selección MI mejora un poco porque descarta variables deportivas redundantes, pero no alcanza a la LR de solo precio; PCA empeora porque mezcla las variables y diluye la señal del precio. Sin cuotas, reducir variables empeora en casi todos los casos: cada grupo de variables deportivas aporta algo.
 
-Los ensembles dependen del enfoque. Sin cuotas, el promedio mejora a la mejor LR en 0{,}0011 (intervalo [$-$0{,}0020; $-$0{,}0001]), porque modelos distintos cometen errores distintos y al promediarlos se compensan. Con cuotas no ayudan: el ponderado asigna a la LR de solo precio entre el 91\,\% y el 98\,\% del peso, así que termina siendo casi la misma LR. El stacking empeora en ambos enfoques, porque aprende demasiado de pocas temporadas.
+Los ensembles dependen del enfoque. Sin cuotas, el promedio mejora a la mejor LR en 0{,}0011 (intervalo [$-$0{,}0020; $-$0{,}0001]), un resultado compatible con la compensación de errores entre modelos. Con cuotas no ayudan: el ponderado asigna a la LR de solo precio entre el 91\,\% y el 98\,\% del peso, así que termina siendo casi la misma LR. El stacking obtiene mayor pérdida en ambos enfoques; este resultado no identifica por sí solo la causa.
 \begin{figure}[!htb]
 \centering
 \includegraphics[width=\columnwidth]{inf_mejoras.png}
@@ -364,7 +364,7 @@ Los ensembles dependen del enfoque. Sin cuotas, el promedio mejora a la mejor LR
 \label{fig:mejoras}
 \end{figure}
 
-La Fig.~\ref{fig:pesos} muestra el efecto de dar más peso a los partidos sorpresivos. Todas las variantes empeoran el log loss, y más cuanto mayor es el peso: con peso 2, el modelo con cuotas pierde 0{,}041. El modelo aprende a predecir más empates y sorpresas, pero estas siguen siendo minoría; al exagerar su importancia, se vuelve menos confiable en la gran mayoría de partidos normales.
+La Fig.~\ref{fig:pesos} muestra el efecto de dar más peso a los partidos sorpresivos. Las variantes probadas empeoran el log loss agregado; esto no implica empeoramiento en cada temporada: con peso 2, el modelo con cuotas pierde 0{,}041. El modelo aprende a predecir más empates y sorpresas, pero estas siguen siendo minoría; al exagerar su importancia, se vuelve menos confiable en la gran mayoría de partidos normales.
 \begin{figure}[!htb]
 \centering
 \includegraphics[width=\columnwidth]{inf_pesos.png}
@@ -381,7 +381,7 @@ La Fig.~\ref{fig:confusion} muestra la matriz de confusión: para cada resultado
 \label{fig:confusion}
 \end{figure}
 
-Probamos forzar más empates con reglas de decisión: por ejemplo, multiplicar la probabilidad de empate por 1,5 solo al elegir la clase. Con cuotas, el F1 macro (el promedio del balance entre precisión y recall de cada clase) sube de 0{,}402 a 0{,}484 y el recall del empate llega al 36\,\%, pero el accuracy baja de 53{,}9\,\% a 50{,}9\,\%. Sin cuotas pasa lo mismo: el F1 sube de 0{,}393 a 0{,}474 y el accuracy baja de 53{,}1\,\% a 48{,}8\,\%. El log loss no mejora, porque las probabilidades no cambian: solo cambia qué clase se elige. Se ganan aciertos de empate a cambio de perder más aciertos de victorias. Como nuestro objetivo es estimar probabilidades y no etiquetas, mantenemos el log loss como métrica principal.
+Probamos forzar más empates con reglas de decisión: por ejemplo, multiplicar la probabilidad de empate por 1,5 solo al elegir la clase. Con cuotas, el F1 macro (el promedio del balance entre precisión y recall de cada clase) sube de 0{,}402 a 0{,}484 y el recall del empate llega al 36\,\%, pero el accuracy baja de 53{,}9\,\% a 50{,}9\,\%. Sin cuotas pasa lo mismo: el F1 sube de 0{,}393 a 0{,}474 y el accuracy baja de 53{,}1\,\% a 48{,}8\,\%. Con cuotas, el multiplicador solo cambia la decisión y conserva el log loss. Sin cuotas, el detector reemplaza la probabilidad de empate: el log loss pasa de 0{,}9776 a 0{,}9785 en validación y de 0{,}9793 a 0{,}9804 en test. La mejora de F1 no implica mejores probabilidades. Se ganan aciertos de empate a cambio de perder más aciertos de victorias. Como nuestro objetivo es estimar probabilidades y no etiquetas, mantenemos el log loss como métrica principal.
 
 \subsection{Estabilidad y rentabilidad (P4)}
 La Fig.~\ref{fig:temporadas} muestra el log loss por temporada. Las tres curvas suben y bajan juntas: hay temporadas más difíciles para todos. La más clara es 2020/21, jugada mayormente sin público, en la que la victoria local bajó al 40\,\% frente al 45\,\% habitual. El modelo con cuotas queda por debajo del consenso en 7 de 8 temporadas, y el modelo sin cuotas siempre queda por encima del mercado. Esta regularidad indica que las conclusiones no dependen de una sola temporada~\cite{siddiqi2017}.
@@ -392,7 +392,7 @@ La Fig.~\ref{fig:temporadas} muestra el log loss por temporada. Las tres curvas 
 \label{fig:temporadas}
 \end{figure}
 
-Por último, simulamos apuestas con una regla fija, decidida antes de ver los resultados: apostar una unidad al resultado cuya ganancia esperada según el modelo supere el 2\,\% ($p_j\,o_j-1>0{,}02$). La Fig.~\ref{fig:bt} muestra el retorno por unidad apostada (ROI) con su intervalo. El modelo con cuotas gana 4{,}7\,\% en test con Bet365 (572 apuestas), pero su intervalo va de -11\,\% a +20\,\%: incluye pérdidas, así que no se puede afirmar que gane dinero de forma estable. El modelo sin cuotas pierde ($-$10{,}3\,\%), porque cuando difiere del mercado suele ser el mercado quien tiene razón. Predecir un poco mejor no basta para superar el margen que cobra la casa.
+Por último, simulamos apuestas con una regla fija, decidida antes de ver los resultados: apostar una unidad al resultado cuya ganancia esperada según el modelo supere el 2\,\% ($p_j\,o_j-1>0{,}02$). La Fig.~\ref{fig:bt} muestra el retorno por unidad apostada (ROI) con su intervalo. El modelo con cuotas gana 4{,}7\,\% en test con Bet365 (572 apuestas), pero su intervalo va de -11\,\% a +20\,\%: incluye pérdidas, así que no se puede afirmar que gane dinero de forma estable. El modelo sin cuotas pierde ($-$10{,}3\,\%), porque cuando difiere del mercado suele ser el mercado quien tiene razón. El consenso directo contra Bet365 obtiene un ROI alto en validación y negativo en test; el diagnóstico por apuesta muestra ganancias concentradas en resultados de alta cuota. Sin capturas sincronizadas no se puede confirmar su ejecución. Predecir un poco mejor no basta para superar el margen que cobra la casa.
 \begin{figure}[!htb]
 \centering
 \includegraphics[width=\columnwidth]{inf_backtest.png}
@@ -404,11 +404,11 @@ Por último, simulamos apuestas con una regla fija, decidida antes de ver los re
 \FloatBarrier
 \section{Discusión, limitaciones y ética}
 \label{sec:discusion}
-Los resultados confirman que el mercado de apuestas es muy eficiente. Con cuotas, el aprendizaje automático solo logra recalibrar el precio; sin cuotas, los datos deportivos públicos se acercan, pero no lo alcanzan. Tiene sentido: las casas combinan toda la información disponible, incluida la que nosotros no tenemos, y ajustan sus precios con el dinero de miles de apostadores.
+En estas ligas y periodos, el mercado constituye una referencia predictiva difícil de superar. El experimento no establece su eficiencia general. Con cuotas, el aprendizaje automático solo logra recalibrar el precio; sin cuotas, los datos deportivos públicos se acercan, pero no lo alcanzan. Tiene sentido: las casas combinan toda la información disponible, incluida la que nosotros no tenemos, y ajustan sus precios con el dinero de miles de apostadores.
 
-Otra lección es que los modelos simples resistieron. Con cuotas, una LR de dos variables ganó a la red neuronal y a la SVM; sin cuotas, un promedio simple ganó al stacking. En datos con tanto azar como el fútbol, la complejidad adicional se traduce más en sobreajuste que en mejores predicciones. También comprobamos que un accuracy parecido puede esconder diferencias de calibración: por eso conviene evaluar probabilidades con log loss y no solo con aciertos.
+Otra lección es que los modelos simples resistieron. Con cuotas, una LR de dos variables ganó a la red neuronal y a la SVM; sin cuotas, un promedio simple ganó al stacking. Con estas rejillas, la complejidad adicional no produjo mejores predicciones. El sobreajuste explica solo una parte: aparece en la red neuronal y en el bosque aleatorio, pero no en la SVM. También comprobamos que un accuracy parecido puede esconder diferencias de calibración: por eso conviene evaluar probabilidades con log loss y no solo con aciertos.
 
-\textbf{Limitaciones.} No tenemos alineaciones reales ni lesiones: las plantillas son las del videojuego y algunas valoraciones tienen más de un año. El historial solo incluye partidos de liga, no copas ni torneos europeos. Las cuotas no tienen la hora exacta de captura, por lo que las apuestas simuladas podrían no haber estado disponibles a esos precios. Las búsquedas de hiperparámetros son acotadas. Además, el periodo de test se había evaluado con una versión anterior del sistema, por lo que conviene confirmar los resultados con partidos de 2026/27. Por último, los resultados no se extrapolan a otras ligas ni deportes.
+\textbf{Limitaciones.} No tenemos alineaciones reales ni lesiones: las plantillas son las del videojuego y algunas valoraciones tienen más de un año. El historial solo incluye partidos de liga, no copas ni torneos europeos. Las cuotas no tienen la hora exacta de captura, por lo que las apuestas simuladas podrían no haber estado disponibles a esos precios. Las búsquedas de hiperparámetros son acotadas. La disponibilidad de cuotas cambia en el test: en 2024/25 Bet\&Win y William Hill cubren el 62\,\% y el 75\,\% de los partidos, y en 2025/26 el consenso depende solo de Bet365 y Bet\&Win. En esa última temporada no se usa Pinnacle, de modo que la LR recibe el consenso en lugar del precio con el que se entrenó y la referencia de Pinnacle coincide con el consenso. En los modelos de diferencia de goles, la conversión a probabilidades se aprende con una temporada apartada y luego el modelo se reentrena con todos los datos, lo que puede desajustar un poco esa conversión. Además, el periodo de test se había evaluado con una versión anterior del sistema, por lo que conviene confirmar los resultados con partidos de 2026/27. Por último, los resultados no se extrapolan a otras ligas ni deportes.
 
 \textbf{Ética.} Los datos se usan con fines académicos y no se redistribuyen. No se usan datos personales sensibles. Los equipos con menos historial o sin valoraciones tienen predicciones de menor calidad, por eso publicamos la cobertura en lugar de ocultarla. Las apuestas pueden generar adicción y pérdidas económicas: este análisis es experimental y no es una recomendación para apostar.
 
@@ -416,11 +416,11 @@ Otra lección es que los modelos simples resistieron. Con cuotas, una LR de dos 
 \label{sec:conclusiones}
 Construimos dos predictores con el mismo protocolo: uno que usa las cuotas y otro que solo usa datos deportivos. Las respuestas a las preguntas de investigación son:
 
-\textbf{P1 (con cuotas).} Sí, aunque por poco. Una LR que recalibra el precio reduce el log loss del consenso en 0{,}0012 en validación (intervalo [$-$0{,}0020; $-$0{,}0005], mejora en 5 de 6 temporadas) y en 0{,}0018 en test. Frente a Pinnacle la mejora es de 0{,}0005 en validación, no concluyente, y de 0{,}0012 en test. El modelo no ordena mejor los partidos: solo corrige la calibración del mercado.
+\textbf{P1 (con cuotas).} Sí, aunque por poco. Una LR que recalibra el precio reduce el log loss del consenso en 0{,}0012 en validación (intervalo [$-$0{,}0020; $-$0{,}0005], mejora en 5 de 6 temporadas) y en 0{,}0018 en test. Frente a Pinnacle con respaldo del consenso la mejora es de 0{,}0005 en validación, no concluyente, y de 0{,}0012 en test. La mejora observada se acompaña de menor error de calibración, con AUC similar.
 
 \textbf{P2 (sin cuotas).} Un promedio de modelos deportivos reproduce el 89{,}4\,\% de la mejora del mercado sobre el prior, con correlación 0{,}95 con sus probabilidades y el mismo favorito en el 90{,}9\,\% de los partidos, pero no lo supera. La plantilla aporta frente al historial solo; las habilidades individuales no añaden más.
 
-\textbf{P3.} MI y PCA no mejoran al mejor modelo de ningún enfoque. Combinar modelos ayuda sin cuotas, pero no con cuotas. Dar más peso a los partidos sorpresivos empeora siempre.
+\textbf{P3.} MI y PCA no mejoran al mejor modelo de ningún enfoque. Combinar modelos ayuda sin cuotas, pero no con cuotas. Dar más peso a los partidos sorpresivos empeora el log loss agregado de las variantes probadas, aunque no necesariamente en cada temporada.
 
 \textbf{P4.} Los resultados son estables: el modelo con cuotas supera al consenso en 7 de 8 temporadas y el modelo sin cuotas queda detrás del mercado en todas. Predecir mejor no garantiza ganar dinero: el ROI del modelo con cuotas en test (4{,}7\,\%) tiene un intervalo que incluye pérdidas, y el del modelo sin cuotas es negativo.
 
@@ -437,7 +437,7 @@ Como trabajo futuro, proponemos incorporar alineaciones y lesiones confirmadas, 
 \bibitem{james2023} G. James, D. Witten, T. Hastie, R. Tibshirani, and J. Taylor, \textit{An Introduction to Statistical Learning with Applications in Python}. Springer, 2023.
 \bibitem{siddiqi2017} N. Siddiqi, \textit{Intelligent Credit Scoring: Building and Implementing Better Credit Risk Scorecards}, 2nd ed. Wiley, 2017.
 \bibitem{benjamini1995} Y. Benjamini and Y. Hochberg, ``Controlling the false discovery rate: a practical and powerful approach to multiple testing,'' \textit{Journal of the Royal Statistical Society: Series B}, vol. 57, no. 1, pp. 289--300, 1995.
-\bibitem{footballdata} football-data.co.uk, ``Football Results, Statistics \& Soccer Betting Odds Data,'' \url{https://football-data.co.uk/data.php}, 2025.
+\bibitem{footballdata} football-data.co.uk, ``Football Results, Statistics \& Soccer Betting Odds Data,'' \url{https://football-data.co.uk/data.php}, consultado en noviembre de 2026.
 \bibitem{kagglefifa} Kaggle, conjuntos de ratings de jugadores: ``FIFA Players Dataset'' (luisfucros, FIFA 15--22), \url{https://www.kaggle.com/datasets/luisfucros/fifa-players}; ``EA Sports FC 24 complete player dataset'' (stefanoleone992, FC 23--24), \url{https://www.kaggle.com/datasets/stefanoleone992/ea-sports-fc-24-complete-player-dataset}; ``EA Sports FC 25 + Real Player Data (SoFIFA Merge)'' (sametozturkk), \url{https://www.kaggle.com/datasets/sametozturkk/ea-sports-fc-25-real-player-data-sofifa-merge}; ``FC 26 (FIFA 26) Player Data'' (rovnez), \url{https://www.kaggle.com/datasets/rovnez/fc-26-fifa-26-player-data}.
 \end{thebibliography}
 

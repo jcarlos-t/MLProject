@@ -44,7 +44,7 @@ ML_Project/
 
 ## Reproducción
 
-Usar Python 3.10+ y el entorno del proyecto:
+Usar Python 3.12+ y el entorno del proyecto:
 
 ```bash
 python -m venv .venv
@@ -55,6 +55,7 @@ python -m venv .venv
 .venv/bin/python scripts/run_revision.py --jobs 4
 .venv/bin/python scripts/split_holdout.py
 .venv/bin/python -m unittest discover -s tests -v
+.venv/bin/python scripts/experiment_draws.py
 .venv/bin/python scripts/report/build.py
 ```
 
@@ -82,7 +83,7 @@ Los esquemas data-centric mantienen factores 2/3/5, igualdad de peso acierto/fal
 
 ## Uso de ambos modelos
 
-Resultados de la ejecución `01afe756130bafc6` (menor log loss es mejor):
+Resultados de la ejecución `39622169225decc0` (menor log loss es mejor):
 
 | Modelo / referencia | Validación temporal | Test 2024/25–2025/26 |
 |---|---:|---:|
@@ -116,6 +117,10 @@ Los modelos adicionales se guardan en `scripts/data/draw_runs/<huella>/`, separa
 - `docs/resultados_revision.csv`: única tabla numérica utilizada por ambos entregables.
 - `scripts/mlcore/`: implementación compartida y probada; `scripts/notebooks/`: exposición ejecutada de cada etapa.
 
-Los resultados anteriores, cuadernos y documentos se preservan localmente en `scripts/data/archive/pre_revision_20261112/`. No se mezclan con los resultados vigentes. Las figuras antiguas que ya no cita el informe son antecedentes; las vigentes llevan prefijo `revision_` y se generan directamente desde los resultados, sin índices frágiles de celdas ni recortes pendientes.
+Los resultados anteriores, cuadernos y documentos se preservan localmente en `scripts/data/archive/pre_revision_20261112/`. No se mezclan con los resultados vigentes. Las figuras vigentes llevan prefijos `inf_` (informe) y `revision_` (presentación) y se generan directamente desde los resultados, sin índices frágiles de celdas ni recortes pendientes.
 
 Los CSV crudos no se versionan ni redistribuyen. Se conservan las fuentes y huellas para uso académico. Persisten los límites de cobertura, ratings antiguos, alineaciones del juego, partidos solo de liga y sincronización de cuotas.
+
+El generador del informe incluye sus plantillas en `scripts/report/templates/`, calcula los diagnósticos faltantes y comprueba que el experimento de empates corresponde a la ejecución principal y al código actual.
+
+Los diagnósticos adicionales se publican en [DIAGNOSTICOS.md](docs/DIAGNOSTICOS.md): concentración del retorno del consenso contra Bet365, resultados por temporada y recalibración de pesos en un periodo común. Las observaciones de disponibilidad y del reajuste del calibrador son limitaciones; ampliar snapshots requiere un experimento nuevo con fechas verificadas.

@@ -10,6 +10,8 @@ import sys, json, warnings
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+warnings.filterwarnings('ignore', category=pd.errors.PerformanceWarning)
+warnings.filterwarnings('ignore', category=pd.errors.DtypeWarning)
 ROOT = Path.cwd()
 while not (ROOT/'scripts/mlcore').is_dir():
     if ROOT == ROOT.parent: raise RuntimeError('No se encontro la raiz del proyecto')
@@ -123,10 +125,21 @@ def main():
       ('Entregables desde la misma tabla', 'Las figuras, el informe y las 13 diapositivas se generan desde esta ejecución, no desde cifras copiadas a mano.',
        "from mlcore.report import render\nrender(OUT)\nprint('Fuentes de informe y presentacion regeneradas; compilar PDF con scripts/report/build.py')",
        'Las conclusiones de ambas ramas deben seguir los resultados corregidos. La siguiente evaluación independiente requiere partidos futuros.')])
+    append_exploration()
     # Both originals were archived before replacing the documented order.
     for old in ('08_modelo_final.ipynb','09_pesos_ensembles.ipynb'):
         p=NB/old
         if p.exists(): p.unlink()
+
+
+def append_exploration():
+    from notebook_extras import EXTRAS
+    for name, steps in EXTRAS.items():
+        nb = nbf.read(NB/name, as_version=4)
+        for heading, before, code, after in steps:
+            nb.cells += [nbf.v4.new_markdown_cell('## '+heading+'\n\n'+before), nbf.v4.new_code_cell(code),
+                         nbf.v4.new_markdown_cell('**Qué encontramos / decisión.** '+after)]
+        nbf.write(nb, NB/name)
 
 
 if __name__ == '__main__': main()

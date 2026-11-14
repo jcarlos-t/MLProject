@@ -29,7 +29,7 @@ Familia elegida en validación: **Mayor peso al empate (decisión)**.
 | Detector de empate: probabilidades | 0.4103 | 0.0294 | 0.4059 | 0.0153 | 53.92% | 0.93% | 0.965622 |
 | Detector de empate: umbral F1 | 0.4854 | 0.3564 | 0.3074 | 0.4240 | 50.18% | 34.27% | 0.965622 |
 
-### test
+### test_revisado
 
 | Método | F1 macro ↑ | F1 empate ↑ | Precisión empate | Recall empate | Accuracy ↑ | Predice empate | Log loss ↓ |
 |---|---:|---:|---:|---:|---:|---:|---:|
@@ -44,7 +44,7 @@ Familia elegida en validación: **Mayor peso al empate (decisión)**.
 
 validacion: frente al original, Δ F1 macro **+0.0824**, IC 95% [+0.0759, +0.0887]; Δ accuracy **-2.94 puntos porcentuales**, IC [-3.61, -2.29].
 
-test: frente al original, Δ F1 macro **+0.0776**, IC 95% [+0.0675, +0.0877]; Δ accuracy **-3.38 puntos porcentuales**, IC [-4.43, -2.34].
+test_revisado: frente al original, Δ F1 macro **+0.0776**, IC 95% [+0.0675, +0.0877]; Δ accuracy **-3.38 puntos porcentuales**, IC [-4.43, -2.34].
 
 ## Rama sin cuotas
 
@@ -63,7 +63,7 @@ Familia elegida en validación: **Detector de empate: umbral F1**.
 | Detector de empate: probabilidades | 0.3933 | 0.0013 | 0.7500 | 0.0007 | 53.15% | 0.02% | 0.978462 |
 | Detector de empate: umbral F1 | 0.4744 | 0.3413 | 0.2955 | 0.4039 | 48.81% | 33.96% | 0.978462 |
 
-### test
+### test_revisado
 
 | Método | F1 macro ↑ | F1 empate ↑ | Precisión empate | Recall empate | Accuracy ↑ | Predice empate | Log loss ↓ |
 |---|---:|---:|---:|---:|---:|---:|---:|
@@ -78,13 +78,13 @@ Familia elegida en validación: **Detector de empate: umbral F1**.
 
 validacion: frente al original, Δ F1 macro **+0.0816**, IC 95% [+0.0756, +0.0878]; Δ accuracy **-4.33 puntos porcentuales**, IC [-5.04, -3.61].
 
-test: frente al original, Δ F1 macro **+0.0829**, IC 95% [+0.0730, +0.0926]; Δ accuracy **-3.90 puntos porcentuales**, IC [-5.06, -2.75].
+test_revisado: frente al original, Δ F1 macro **+0.0829**, IC 95% [+0.0730, +0.0926]; Δ accuracy **-3.90 puntos porcentuales**, IC [-5.06, -2.75].
 
 ## Alcance de la comparación
 
 Los intervalos usan 5.000 bootstrap por bloques de temporada/año ISO/semana. Son intervalos exploratorios condicionados al procedimiento; no corrigen la selección de la familia ni toda la multiplicidad de la exploración. No se mezclan las predicciones de decisión con el cálculo de log loss ni se sustituyen probabilidades por etiquetas 0/1.
 
-Ejecución: `295d1c215ac9eeb3`. Resultados, configuraciones por fold, selección congelada, predicciones y modelos guardados en `scripts/data/draw_runs/295d1c215ac9eeb3`. El predictor exportado ofrece `predict_proba(frame)` y `predict(frame)`; las dos salidas pueden diferir de argmax cuando el objetivo de decisión es F1.
+Ejecución: `b58cd51d530c4d54`. Resultados, configuraciones por fold, selección congelada, predicciones y modelos guardados en `scripts/data/draw_runs/b58cd51d530c4d54`. El predictor exportado ofrece `predict_proba(frame)` y `predict(frame)`; las dos salidas pueden diferir de argmax cuando el objetivo de decisión es F1.
 
 Reproducción: `.venv/bin/python scripts/experiment_draws.py`.
 

@@ -52,6 +52,34 @@ def validation_diagnostics(out):
     pd.DataFrame(importance).to_csv(out/'importance_groups.csv', index=False)
     return t
 
+def training_gap(out):
+    """Training versus validation loss on two development folds; descriptive, never selects."""
+    path = out/'train_validation_gap.csv'
+    if path.exists(): return pd.read_csv(path).set_index('modelo')
+    import warnings
+    from sklearn.metrics import log_loss
+    from .experiment import choose_parameter
+    from .models import specifications, Predictor
+    df, sets = read_data(out); specs = {s.id: s for s in specifications(sets)}; rows = []
+    names = ['con/LR_REF']+[b+'/'+f for b in ('con', 'sin') for f in ('LR', 'HGB', 'XGB', 'RF', 'MLP', 'SVM')]
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        for season_ in (2122, 2324):
+            tr, va = df[df.Season.lt(season_)], df[df.Season.eq(season_)]
+            for name in names:
+                model = Predictor(specs[name], choose_parameter(df, specs[name], season_, out)[0]).fit(tr)
+                used = tr.iloc[-9000:] if name.endswith('SVM') else tr  # the SVM only sees its most recent rows
+                rows.append(dict(modelo=name, temporada=season_,
+                    entrenamiento=log_loss(used.y, model.predict_proba(used), labels=[0, 1, 2]),
+                    validacion=log_loss(va.y, model.predict_proba(va), labels=[0, 1, 2])))
+    t = pd.DataFrame(rows).groupby('modelo')[['entrenamiento', 'validacion']].mean()
+    t['brecha'] = t.validacion-t.entrenamiento
+    # The two-variable price LR cannot overfit: its gap only reflects season difficulty.
+    t['brecha_extra'] = t.brecha-t.loc['con/LR_REF', 'brecha']
+    t.to_csv(path)
+    return t
+
+
 COL = {'modelo_con': '#0d9488', 'modelo_sin': '#2563eb', 'consenso': '#475569',
        'Pinnacle_respaldo': '#9b596c', 'prior': '#a1a1aa'}
 LABEL = {'modelo_con': 'Modelo con cuotas', 'modelo_sin': 'Modelo sin cuotas',
@@ -453,8 +481,8 @@ def eda_figures(c):
 
 def paper(c):
     # Keep authors and the IEEE preamble. Replace the body so old claims cannot survive.
-    archive = ROOT/'scripts/data/archive/pre_revision_20261112/docs/informe.tex'
-    old = archive.read_text(); preamble = old.split(r'\begin{abstract}')[0]
+    templates = ROOT/'scripts/report/templates'
+    preamble = (templates/'preamble.tex').read_text()
     preamble = preamble.replace('Predicción probabilística del resultado 1X2 en partidos de fútbol mediante Machine Learning',
         'Predicción probabilística de fútbol con y sin cuotas: comparación temporal de modelos y mercado')
     paper_figures(c); E = eda_figures(c)
@@ -493,6 +521,8 @@ def paper(c):
         'wins': str(int((bs.modelo_con < bs.consenso).sum())), 'nseas': str(len(bs)),
         'roicon': dec(100*bcon.ROI, 1), 'roilo': f'{100*bcon.lo:.0f}', 'roihi': f'{100*bcon.hi:.0f}', 'ncon': str(int(bcon.apuestas)),
         'roisin': dec(100*bsin.ROI, 1),
+        'cov_bw': f"{100*c['df'].loc[c['df'].Season.eq(2425), ['BWH', 'BWD', 'BWA']].notna().all(axis=1).mean():.0f}",
+        'cov_wh': f"{100*c['df'].loc[c['df'].Season.eq(2425), ['WHH', 'WHD', 'WHA']].notna().all(axis=1).mean():.0f}",
         'w2': dec(c['feedback'].set_index('candidate').loc['con/LR/w2', 'log_loss']-ll(v, 'modelo_con'), 3),
         'repo': r'\url{https://github.com/jcarlos-t/MLProject}',
         'na_stats': dec(E['na_stats'], 1), 'na_leagues': str(E['na_leagues']), 'na_pin': f"{E['na_pin']:.0f}", 'na_wh': f"{E['na_wh']:.0f}",
@@ -509,12 +539,19 @@ def paper(c):
         'imp_hist': dec(E['imp'][('sin', 'Historia')], 3), 'imp_sk': dec(E['imp'][('sin', 'Habilidades')], 3), 'imp_sq': dec(E['imp'][('sin', 'Plantilla')], 3),
         'nhist': str(len(c['sets']['history'])), 'nroster': str(len(c['sets']['roster'])), 'nskills': str(len(c['sets']['skills'])),
     }
+    gap = training_gap(c['out']).brecha_extra
+    V.update(gap_svm=dec(gap['con/SVM'], 3), gap_mlp=dec(gap['con/MLP'], 3), gap_rf=dec(gap['con/RF'], 3))
     dm = E['draws'].query('split == "validacion"').set_index(['branch', 'family'])
     V.update(f1b=dec(dm.loc[('con', 'base'), 'F1_macro'], 3), f1w=dec(dm.loc[('con', 'boost'), 'F1_macro'], 3),
              accb=dec(100*dm.loc[('con', 'base'), 'accuracy'], 1), accw=dec(100*dm.loc[('con', 'boost'), 'accuracy'], 1),
              recw=f"{100*dm.loc[('con', 'boost'), 'recall_D']:.0f}",
              f1sb=dec(dm.loc[('sin', 'base'), 'F1_macro'], 3), f1sw=dec(dm.loc[('sin', 'detector_threshold'), 'F1_macro'], 3),
              accsb=dec(100*dm.loc[('sin', 'base'), 'accuracy'], 1), accsw=dec(100*dm.loc[('sin', 'detector_threshold'), 'accuracy'], 1))
+    dt = E['draws'].query('split == "test_revisado"').set_index(['branch', 'family'])
+    V.update(draw_ll_base=dec(dm.loc[('sin','base'),'log_loss']),
+        draw_ll_detector=dec(dm.loc[('sin','detector_threshold'),'log_loss']),
+        draw_test_base=dec(dt.loc[('sin','base'),'log_loss']),
+        draw_test_detector=dec(dt.loc[('sin','detector_threshold'),'log_loss']))
     body = r"""\begin{abstract}
 ¿Se puede predecir el resultado de un partido de fútbol mejor que las casas de apuestas? Este trabajo estima la probabilidad de victoria local, empate y victoria visitante en @@n@@ partidos de nueve ligas europeas, entre 2014/15 y 2025/26, con dos enfoques de igual importancia. El primero usa las cuotas de las casas como dato de entrada y pregunta si el aprendizaje automático puede mejorarlas. El segundo no mira las cuotas: construye la probabilidad solo con información deportiva (historial de resultados y valoraciones de jugadores del videojuego FIFA/FC) y mide qué tan cerca llega del mercado. Se comparan regresión logística, árboles potenciados, bosques aleatorios, redes neuronales, SVM y combinaciones de modelos, entrenando siempre con el pasado y evaluando en temporadas posteriores. La métrica principal es la pérdida logarítmica (log loss), que premia asignar probabilidades altas a lo que realmente ocurre. Con cuotas, una regresión logística sobre el precio mejora ligeramente al consenso de las casas (@@vcon@@ frente a @@vm@@ en validación y @@tcon@@ frente a @@tm@@ en test). Sin cuotas, un promedio de modelos obtiene @@vsin@@ y @@tsin@@: recupera el @@frac@@\,\% de la ventaja que tiene el mercado sobre una predicción ingenua, sin llegar a superarlo. Ninguno de los dos enfoques demuestra ganancias estables en apuestas.
 \end{abstract}
@@ -564,7 +601,7 @@ El Cuadro~\ref{tab:vars} resume qué información hay por partido. Es importante
         ['Identificación', '5', 'liga, temporada, fecha, equipos'],
         ['Resultado (objetivo)', '3', 'H/D/A y goles de cada equipo'],
         ['Estadísticas del partido', '12', 'tiros, córners, faltas, tarjetas (solo para el historial)'],
-        ['Cuotas', '4 casas', 'Bet365, Bet\\&Win, Pinnacle y William Hill'],
+        ['Cuotas', 'Hasta 4 casas', 'Bet365, Bet\\&Win, Pinnacle y William Hill'],
         ['Historia (construida)', '@@nhist@@', 'Elo, forma, medias recientes, descanso'],
         ['Plantilla', '@@nroster@@', 'valoración media del once y de la plantilla'],
         ['Habilidades', '@@nskills@@', 'definición, regate, pase, defensa, portero']],
@@ -574,17 +611,17 @@ La Fig.~\ref{fig:datos} resume los datos. La victoria local es el resultado más
 """
     body += latex_figure('inf_datos', 'fig:datos', 'Izquierda: frecuencia de cada resultado. Derecha: fracción de partidos con valoraciones de plantilla disponibles antes del partido y con cuotas fiables de Pinnacle.')
     body += r"""\subsection{Calidad de los datos}
-\textbf{Datos faltantes.} La Fig.~\ref{fig:nulos} muestra el porcentaje de partidos sin dato en cada columna. Las cuatro casas que usamos (en verde) casi siempre tienen cuotas; otras casas, como Ladbrokes o Interwetten, faltan en muchos partidos y se descartan. Los faltantes no son aleatorios: dependen de la casa y de la temporada. Pinnacle falta en el @@na_pin@@\,\% de 2025/26 y William Hill en el @@na_wh@@\,\%, porque dejaron de publicarse en la fuente. Por eso las cuotas \emph{no se imputan}: inventar un precio que nunca existió sería engañoso. Las estadísticas del partido faltan en el @@na_stats@@\,\% de los casos, concentradas en @@na_leagues@@ ligas cuyas primeras temporadas no las publican; el modelo las recibe como promedios del pasado, con su indicador de dato faltante. El árbitro y la hora se descartan porque faltan en la mayoría de partidos.
+\textbf{Datos faltantes.} La Fig.~\ref{fig:nulos} muestra el porcentaje de partidos sin dato en cada columna. Las cuatro casas consideradas (en verde) tienen cobertura variable; otras casas, como Ladbrokes o Interwetten, faltan en muchos partidos y se descartan. Los faltantes no son aleatorios: dependen de la casa y de la temporada. Pinnacle falta en el @@na_pin@@\,\% de 2025/26 y William Hill en el @@na_wh@@\,\%, respectivamente. William Hill dejó de publicarse; Pinnacle se excluye desde el 23/07/2025 por la advertencia de calidad de la fuente, incluso cuando tiene precios. Por eso las cuotas \emph{no se imputan}: inventar un precio que nunca existió sería engañoso. Las estadísticas del partido faltan en el @@na_stats@@\,\% de los casos, concentradas en @@na_leagues@@ ligas cuyas primeras temporadas no las publican; el modelo las recibe como promedios del pasado, con su indicador de dato faltante. El árbitro y la hora se descartan porque faltan en la mayoría de partidos.
 """
     body += latex_figure('inf_nulos', 'fig:nulos', 'Porcentaje de partidos sin dato por columna (2014/15--2025/26). En verde, las casas usadas para el consenso; la línea roja marca el 20\\,\\%.')
-    body += r"""\textbf{Valores extremos.} La Fig.~\ref{fig:extremos} muestra la dispersión de goles, tiros y cuotas. Con la regla del rango intercuartílico (IQR), que marca como atípico lo que está muy lejos de la mitad central de los datos, aparecen pocos casos en goles y tiros (a lo sumo el @@out_goals@@\,\%) y más en las cuotas (@@out_odds@@\,\% en la del visitante), con valores de hasta @@max_goals@@ goles y cuotas de @@max_odds@@. No son errores: son goleadas y partidos muy desiguales, por ejemplo un líder contra el último. Por eso no se eliminan ni se recortan.
+    body += r"""\textbf{Valores extremos.} La Fig.~\ref{fig:extremos} muestra la dispersión de goles, tiros y cuotas. Con la regla del rango intercuartílico (IQR), que marca como atípico lo que está muy lejos de la mitad central de los datos, aparecen pocos casos en goles y tiros (a lo sumo el @@out_goals@@\,\%) y más en las cuotas (@@out_odds@@\,\% en la del visitante), con valores de hasta @@max_goals@@ goles y cuotas de @@max_odds@@. Estos extremos pueden corresponder a goleadas y partidos muy desiguales; su magnitud por sí sola no demuestra que sean errores. Por eso no se eliminan ni se recortan.
 """
     body += latex_figure('inf_extremos', 'fig:extremos', 'Diagramas de caja de goles, tiros a puerta y cuotas de Bet365. Los puntos son valores extremos según la regla IQR.')
     body += r"""\subsection{Relaciones entre variables}
 Las cuotas anticipan el resultado. En la Fig.~\ref{fig:cuotasres} (izquierda), la probabilidad de victoria local según las casas es mayor cuando el local termina ganando: la mediana es @@pH_H@@\,\% en esos partidos y @@pH_A@@\,\% cuando gana el visitante. La valoración del once titular (derecha) muestra el mismo patrón: cuando gana el local, su once es en la mediana @@xi_H@@ puntos mejor que el rival; cuando gana el visitante, es @@xi_A@@. Ambas fuentes de información apuntan en la misma dirección, aunque con mucha superposición entre las cajas: el fútbol tiene mucho azar.
 """
     body += latex_figure('inf_cuotas_resultado', 'fig:cuotasres', 'Probabilidad de victoria local implícita en las cuotas (izquierda) y diferencia de valoración del once titular (derecha) según el resultado real. Los valores positivos favorecen al local.')
-    body += r"""La Fig.~\ref{fig:corr} muestra la correlación entre las variables principales, todas expresadas como diferencia entre local y visitante. Hay tres observaciones. Primero, las variables deportivas están muy relacionadas entre sí: el Elo y los puntos recientes tienen correlación @@c_elo_pts@@, y el once titular y la plantilla completa, @@c_xi_sq@@; por eso muchas son redundantes y conviene regularizar o reducir variables. Segundo, el favoritismo según las cuotas se correlaciona fuerte con el Elo (@@c_elo_mkt@@) y con el once titular (@@c_xi_mkt@@): el mercado ya incorpora la información deportiva, lo que anticipa que añadirla al precio aportará poco. Tercero, el margen de la casa no se relaciona con ninguna variable, así que no informa sobre el resultado. Además, las probabilidades de las cuatro casas casi coinciden (correlación mínima de @@corr_casas@@), por lo que conviene resumirlas en un solo consenso.
+    body += r"""La Fig.~\ref{fig:corr} muestra la correlación entre las variables principales, todas expresadas como diferencia entre local y visitante. Hay tres observaciones. Primero, las variables deportivas están muy relacionadas entre sí: el Elo y los puntos recientes tienen correlación @@c_elo_pts@@, y el once titular y la plantilla completa, @@c_xi_sq@@; por eso muchas son redundantes y conviene regularizar o reducir variables. Segundo, el favoritismo según las cuotas se correlaciona fuerte con el Elo (@@c_elo_mkt@@) y con el once titular (@@c_xi_mkt@@): el mercado ya incorpora la información deportiva, lo que anticipa que añadirla al precio aportará poco. Tercero, el margen de la casa muestra baja correlación lineal con estas variables; esto no descarta asociaciones no lineales ni demuestra ausencia de información sobre el resultado. Además, las probabilidades de las cuatro casas casi coinciden (correlación mínima de @@corr_casas@@), por lo que conviene resumirlas en un solo consenso.
 """
     body += latex_figure('inf_correlacion', 'fig:corr', 'Correlación de Pearson entre variables clave (diferencia local menos visitante). Rojo indica relación positiva y azul negativa.')
     body += r"""\subsection{Sesgos y fuga de datos}
@@ -670,12 +707,12 @@ En cada enfoque se elige el modelo con menor log loss en validación. Si dos mod
 
 \textbf{Métricas.} El log loss es la métrica de selección porque mide directamente la calidad de la probabilidad y es una regla de puntuación \emph{propia}: un modelo obtiene su mejor valor esperado solo si dice las probabilidades que realmente cree, de modo que no se puede mejorar exagerando ni suavizando. El accuracy y el F1 solo miran la clase elegida e ignoran la confianza; el AUC mide la ordenación y el ECE la calibración. Por eso se reportan como complemento, no para elegir modelos.
 
-Para saber si una diferencia es real o fruto del azar se usa \emph{bootstrap}: se toman 5.000 muestras al azar de semanas completas de partidos y en cada una se recalcula la diferencia de log loss. Con ellas se obtiene un intervalo de confianza del 95\,\%; si no incluye el cero, la diferencia es consistente. Se remuestrean semanas y no partidos sueltos porque los partidos de una misma jornada comparten condiciones. Como se hacen varias comparaciones a la vez, los valores $p$ se corrigen con el método de Benjamini y Hochberg~\cite{benjamini1995}.
+Para saber si una diferencia es real o fruto del azar se usa \emph{bootstrap}: se toman 5.000 muestras al azar de semanas completas de partidos y en cada una se recalcula la diferencia de log loss. Con ellas se obtiene un intervalo de confianza del 95\,\%; si no incluye el cero, la diferencia es consistente. Se remuestrean semanas y no partidos sueltos porque los partidos de una misma jornada comparten condiciones. Los contrastes de validación usan las mismas predicciones con las que se eligió el modelo, así que pueden ser algo optimistas y se leen como diagnósticos de desarrollo. Como se hacen varias comparaciones a la vez, los valores $p$ se corrigen con el método de Benjamini y Hochberg~\cite{benjamini1995}.
 
 \section{Resultados y análisis}
 \label{sec:resultados}
 \subsection{Con cuotas: ¿se puede mejorar al mercado? (P1)}
-El Cuadro~\ref{tab:familias} muestra el log loss de validación de todos los modelos. Con cuotas, el mejor es la LR que solo recibe los dos números del precio (@@vcon@@). Los modelos que además reciben variables deportivas empeoran: esa información ya está incluida en el precio y añadirla solo aporta ruido. Los modelos más flexibles, como la red neuronal y la SVM, son los peores, porque se ajustan demasiado a los datos de entrenamiento.
+El Cuadro~\ref{tab:familias} muestra el log loss de validación de todos los modelos. Con cuotas, el mejor es la LR que solo recibe los dos números del precio (@@vcon@@). Los modelos que además reciben variables deportivas no la superan, y tampoco la red neuronal ni la SVM, que es la peor de todas. Para saber si la causa es el sobreajuste comparamos el error de entrenamiento con el de validación en dos temporadas, tomando como referencia la LR de solo precio. La SVM casi no muestra diferencia (@@gap_svm@@): su error ya es alto en el entrenamiento, así que su problema no es el sobreajuste. La red neuronal y el bosque aleatorio sí se ajustan más al entrenamiento (@@gap_mlp@@ y @@gap_rf@@), aunque el bosque valida bien.
 """
     rows = [['LR solo precio', dec(result.loc['con/LR_REF', 'log_loss']), '--'],
             ['LR consenso y margen', dec(result.loc['con/LR_consenso', 'log_loss']), '--']]
@@ -685,27 +722,27 @@ El Cuadro~\ref{tab:familias} muestra el log loss de validación de todos los mod
     rows.append(['Diferencia de goles', '--', dec(result.loc['sin/GD_ALL', 'log_loss'])])
     body += latex_table(['Modelo', 'Con cuotas', 'Sin cuotas'], rows, 'tab:familias',
         'Log loss de validación (seis temporadas) de cada modelo. Menor es mejor.')
-    body += r"""El Cuadro~\ref{tab:final} compara los modelos elegidos con los dos baselines, el prior y el mercado, en validación y en test. La LR con cuotas obtiene el menor log loss en ambos periodos. La mejora frente al consenso parece pequeña, pero es consistente: el Cuadro~\ref{tab:contrastes} muestra que en validación su intervalo de confianza no incluye el cero y que el modelo mejora en @@d1s@@ de las 6 temporadas; en test ocurre lo mismo. Frente a Pinnacle, la casa más precisa, la mejora es menor y en validación no es concluyente.
+    body += r"""El Cuadro~\ref{tab:final} compara los modelos elegidos con los dos baselines, el prior y el mercado, en validación y en test. La LR con cuotas obtiene el menor log loss en ambos periodos. La mejora frente al consenso parece pequeña, pero es consistente: el Cuadro~\ref{tab:contrastes} muestra que en validación su intervalo de confianza no incluye el cero y que el modelo mejora en @@d1s@@ de las 6 temporadas; en test ocurre lo mismo. Frente a la referencia Pinnacle con respaldo del consenso, la mejora es menor y en validación no es concluyente.
 """
     rows = [[LABEL[k], dec(ll(v, k)), dec(ll(t, k)), dec(m.loc[(t, k), 'AUC_macro'], 3), dec(100*m.loc[(t, k), 'accuracy'], 1)]
             for k in ['prior', 'consenso', 'Pinnacle_respaldo', 'modelo_con', 'modelo_sin']]
     body += latex_table(['', 'LL val.', 'LL test', 'AUC', r'Acc.\,\%'], rows, 'tab:final',
         'Modelos elegidos frente a las referencias. AUC y accuracy en test.')
     rows = []
-    for a, b, lab in [('modelo_con', 'consenso', 'Con cuotas vs. consenso'), ('modelo_con', 'Pinnacle_respaldo', 'Con cuotas vs. Pinnacle'),
+    for a, b, lab in [('modelo_con', 'consenso', 'Con cuotas vs. consenso'), ('modelo_con', 'Pinnacle_respaldo', 'Con cuotas vs. ref. mixta'),
                       ('modelo_sin', 'consenso', 'Sin cuotas vs. consenso')]:
         for i, (split, name) in enumerate(((v, 'Val.'), (t, 'Test'))):
             x = pr.loc[(split, a, b)]
             rows.append([lab if i == 0 else '', name, dec(x.delta), f'[{dec(x.lo)}; {dec(x.hi)}]'])
     body += latex_table(['Comparación', '', r'$\Delta$ LL', r'IC 95\,\%'], rows, 'tab:contrastes',
-        'Diferencia de log loss e intervalo de confianza del 95\\,\\%. Un valor negativo favorece al primer modelo.', align='llrr')
-    body += r"""¿De dónde viene la mejora? El AUC del modelo (@@auccon@@) es prácticamente igual al del consenso (@@aucm@@): ambos ordenan los partidos de la misma forma, y por eso el accuracy también es casi igual. Lo que cambia es la calibración: el ECE baja de @@ecem@@ a @@ececon@@. La Fig.~\ref{fig:cal} lo muestra: los puntos de un modelo bien calibrado caen sobre la diagonal, es decir, cuando dice 40\,\% el resultado ocurre cerca del 40\,\% de las veces. En resumen, el modelo con cuotas no descubre información nueva; ajusta ligeramente las probabilidades del mercado para que coincidan mejor con las frecuencias reales.
+        'Diferencia de log loss e intervalo del 95\\,\\%. Un valor negativo favorece al primer modelo. La referencia mixta usa Pinnacle fiable y, en su ausencia, consenso; en 2025/26 usa solo consenso.', align='llrr')
+    body += r"""¿De dónde viene la mejora? El AUC del modelo (@@auccon@@) es prácticamente igual al del consenso (@@aucm@@): su capacidad agregada de ordenación es similar, y por eso el accuracy también es casi igual. Lo que cambia es la calibración: el ECE baja de @@ecem@@ a @@ececon@@. La Fig.~\ref{fig:cal} lo muestra: los puntos de un modelo bien calibrado caen sobre la diagonal, es decir, cuando dice 40\,\% el resultado ocurre cerca del 40\,\% de las veces. En resumen, el modelo con cuotas no descubre información nueva; ajusta ligeramente las probabilidades del mercado para que coincidan mejor con las frecuencias reales.
 """
     body += latex_figure('inf_calibracion', 'fig:cal', 'Calibración en validación: frecuencia real frente a probabilidad predicha, en diez grupos de partidos. La línea punteada es la calibración perfecta.')
     body += r"""\subsection{Sin cuotas: ¿cuánto se acerca al mercado? (P2)}
-Sin cuotas, el modelo elegido es el promedio de ocho modelos, con log loss @@vsin@@ en validación y @@tsin@@ en test (Cuadros~\ref{tab:familias} y~\ref{tab:final}). Es mejor que cualquier modelo individual, pero queda claramente detrás del mercado, @@gap@@ por encima en validación. Predecir la diferencia de goles no resultó mejor que clasificar directamente el resultado.
+Sin cuotas, el modelo elegido es el promedio de ocho modelos, con log loss @@vsin@@ en validación y @@tsin@@ en test (Cuadros~\ref{tab:familias} y~\ref{tab:final}). Es mejor que cualquier modelo individual, pero queda claramente detrás del mercado, @@gap@@ por encima en validación. El promedio de regresores de diferencia de goles supera a varios clasificadores individuales, pero no a los mejores clasificadores ni al ensemble elegido.
 
-La Fig.~\ref{fig:ablacion} muestra qué información aporta cada grupo de variables. Con solo el historial de resultados, la LR obtiene @@abl0@@; al añadir la valoración de la plantilla baja a @@abl1@@. Añadir las habilidades individuales no mejora más (@@abl2@@): repiten en buena parte lo que ya dice la valoración general y, al ser muchas variables, agregan ruido.
+La Fig.~\ref{fig:ablacion} muestra qué información aporta cada grupo de variables. Con solo el historial de resultados, la LR obtiene @@abl0@@; al añadir la valoración de la plantilla baja a @@abl1@@. Añadir las habilidades individuales no mejora más (@@abl2@@): este resultado es compatible con redundancia respecto a la valoración general, sin demostrar que esa sea la única causa.
 """
     body += latex_figure('inf_ablacion', 'fig:ablacion', 'Log loss de validación de la LR sin cuotas al añadir grupos de variables. Menor es mejor.')
     body += r"""Para ver si el modelo sin cuotas funciona como un generador de cuotas, la Fig.~\ref{fig:predictor} compara sus probabilidades con las del mercado partido a partido. Los puntos se concentran cerca de la diagonal: la correlación es @@corr@@ y ambos eligen al mismo favorito en el @@fav@@\,\% de los partidos. Otra forma de verlo es medir la distancia: el prior obtiene @@vprior@@ y el mercado @@vm@@; el modelo sin cuotas, con @@vsin@@, recorre el @@frac@@\,\% de ese camino. Es decir, con información pública y sin mirar precios se reproduce la mayor parte del trabajo de las casas. El tramo restante probablemente depende de información que no tenemos, como lesiones, alineaciones confirmadas y noticias de último momento. Estas probabilidades se pueden convertir en cuotas propias con $1/p$, sin el margen de la casa.
@@ -718,33 +755,33 @@ Para saber qué información usa cada modelo, desordenamos al azar un grupo de v
     body += r"""\subsection{¿Ayudan las técnicas para mejorar un modelo? (P3)}
 La Fig.~\ref{fig:mejoras} compara cada técnica con la LR que usa todas las variables; las barras negativas indican mejora. Con cuotas, la selección MI mejora un poco porque descarta variables deportivas redundantes, pero no alcanza a la LR de solo precio; PCA empeora porque mezcla las variables y diluye la señal del precio. Sin cuotas, reducir variables empeora en casi todos los casos: cada grupo de variables deportivas aporta algo.
 
-Los ensembles dependen del enfoque. Sin cuotas, el promedio mejora a la mejor LR en @@ens@@ (intervalo [@@enslo@@; @@enshi@@]), porque modelos distintos cometen errores distintos y al promediarlos se compensan. Con cuotas no ayudan: el ponderado asigna a la LR de solo precio entre el @@wmin@@\,\% y el @@wmax@@\,\% del peso, así que termina siendo casi la misma LR. El stacking empeora en ambos enfoques, porque aprende demasiado de pocas temporadas.
+Los ensembles dependen del enfoque. Sin cuotas, el promedio mejora a la mejor LR en @@ens@@ (intervalo [@@enslo@@; @@enshi@@]), un resultado compatible con la compensación de errores entre modelos. Con cuotas no ayudan: el ponderado asigna a la LR de solo precio entre el @@wmin@@\,\% y el @@wmax@@\,\% del peso, así que termina siendo casi la misma LR. El stacking obtiene mayor pérdida en ambos enfoques; este resultado no identifica por sí solo la causa.
 """
     body += latex_figure('inf_mejoras', 'fig:mejoras', 'Cambio de log loss de validación frente a la LR con todas las variables. Valores negativos (barras de color) indican mejora.')
-    body += r"""La Fig.~\ref{fig:pesos} muestra el efecto de dar más peso a los partidos sorpresivos. Todas las variantes empeoran el log loss, y más cuanto mayor es el peso: con peso 2, el modelo con cuotas pierde @@w2@@. El modelo aprende a predecir más empates y sorpresas, pero estas siguen siendo minoría; al exagerar su importancia, se vuelve menos confiable en la gran mayoría de partidos normales.
+    body += r"""La Fig.~\ref{fig:pesos} muestra el efecto de dar más peso a los partidos sorpresivos. Las variantes probadas empeoran el log loss agregado; esto no implica empeoramiento en cada temporada: con peso 2, el modelo con cuotas pierde @@w2@@. El modelo aprende a predecir más empates y sorpresas, pero estas siguen siendo minoría; al exagerar su importancia, se vuelve menos confiable en la gran mayoría de partidos normales.
 """
     body += latex_figure('inf_pesos', 'fig:pesos', 'Cambio de log loss de validación al dar más peso o remuestrear los partidos donde el favorito del mercado no ganó.')
     body += r"""\subsection{¿Por qué casi nunca se predice empate?}
 La Fig.~\ref{fig:confusion} muestra la matriz de confusión: para cada resultado real, qué porcentaje de veces el resultado más probable según el modelo fue local, empate o visitante. El modelo con cuotas acierta el @@rec_H@@\,\% de las victorias locales y el @@rec_A@@\,\% de las visitantes, pero solo el @@rec_D@@\,\% de los empates: elige empate en apenas el @@pred_D@@\,\% de los partidos, aunque ocurren en uno de cada cuatro. No es un error del modelo. Incluso entre equipos de valoración parecida (diferencia de 2 puntos o menos) el empate ocurre el @@draw_bal@@\,\% de las veces, frente al @@draw_unbal@@\,\% en el resto: es más frecuente, pero casi nunca es el resultado \emph{más} probable. Un modelo bien calibrado le asigna entre 25 y 30\,\% al empate, y eso basta para que alguna de las victorias sea más probable.
 """
     body += latex_figure('inf_confusion', 'fig:confusion', 'Matriz de confusión en validación (filas normalizadas): porcentaje de cada resultado real según la clase más probable del modelo.')
-    body += r"""Probamos forzar más empates con reglas de decisión: por ejemplo, multiplicar la probabilidad de empate por 1,5 solo al elegir la clase. Con cuotas, el F1 macro (el promedio del balance entre precisión y recall de cada clase) sube de @@f1b@@ a @@f1w@@ y el recall del empate llega al @@recw@@\,\%, pero el accuracy baja de @@accb@@\,\% a @@accw@@\,\%. Sin cuotas pasa lo mismo: el F1 sube de @@f1sb@@ a @@f1sw@@ y el accuracy baja de @@accsb@@\,\% a @@accsw@@\,\%. El log loss no mejora, porque las probabilidades no cambian: solo cambia qué clase se elige. Se ganan aciertos de empate a cambio de perder más aciertos de victorias. Como nuestro objetivo es estimar probabilidades y no etiquetas, mantenemos el log loss como métrica principal.
+    body += r"""Probamos forzar más empates con reglas de decisión: por ejemplo, multiplicar la probabilidad de empate por 1,5 solo al elegir la clase. Con cuotas, el F1 macro (el promedio del balance entre precisión y recall de cada clase) sube de @@f1b@@ a @@f1w@@ y el recall del empate llega al @@recw@@\,\%, pero el accuracy baja de @@accb@@\,\% a @@accw@@\,\%. Sin cuotas pasa lo mismo: el F1 sube de @@f1sb@@ a @@f1sw@@ y el accuracy baja de @@accsb@@\,\% a @@accsw@@\,\%. Con cuotas, el multiplicador solo cambia la decisión y conserva el log loss. Sin cuotas, el detector reemplaza la probabilidad de empate: el log loss pasa de @@draw_ll_base@@ a @@draw_ll_detector@@ en validación y de @@draw_test_base@@ a @@draw_test_detector@@ en test. La mejora de F1 no implica mejores probabilidades. Se ganan aciertos de empate a cambio de perder más aciertos de victorias. Como nuestro objetivo es estimar probabilidades y no etiquetas, mantenemos el log loss como métrica principal.
 
 \subsection{Estabilidad y rentabilidad (P4)}
 La Fig.~\ref{fig:temporadas} muestra el log loss por temporada. Las tres curvas suben y bajan juntas: hay temporadas más difíciles para todos. La más clara es 2020/21, jugada mayormente sin público, en la que la victoria local bajó al 40\,\% frente al 45\,\% habitual. El modelo con cuotas queda por debajo del consenso en @@wins@@ de @@nseas@@ temporadas, y el modelo sin cuotas siempre queda por encima del mercado. Esta regularidad indica que las conclusiones no dependen de una sola temporada~\cite{siddiqi2017}.
 """
     body += latex_figure('inf_temporadas', 'fig:temporadas', 'Log loss por temporada; la zona sombreada es el test. Menor es mejor.')
-    body += r"""Por último, simulamos apuestas con una regla fija, decidida antes de ver los resultados: apostar una unidad al resultado cuya ganancia esperada según el modelo supere el 2\,\% ($p_j\,o_j-1>0{,}02$). La Fig.~\ref{fig:bt} muestra el retorno por unidad apostada (ROI) con su intervalo. El modelo con cuotas gana @@roicon@@\,\% en test con Bet365 (@@ncon@@ apuestas), pero su intervalo va de @@roilo@@\,\% a +@@roihi@@\,\%: incluye pérdidas, así que no se puede afirmar que gane dinero de forma estable. El modelo sin cuotas pierde (@@roisin@@\,\%), porque cuando difiere del mercado suele ser el mercado quien tiene razón. Predecir un poco mejor no basta para superar el margen que cobra la casa.
+    body += r"""Por último, simulamos apuestas con una regla fija, decidida antes de ver los resultados: apostar una unidad al resultado cuya ganancia esperada según el modelo supere el 2\,\% ($p_j\,o_j-1>0{,}02$). La Fig.~\ref{fig:bt} muestra el retorno por unidad apostada (ROI) con su intervalo. El modelo con cuotas gana @@roicon@@\,\% en test con Bet365 (@@ncon@@ apuestas), pero su intervalo va de @@roilo@@\,\% a +@@roihi@@\,\%: incluye pérdidas, así que no se puede afirmar que gane dinero de forma estable. El modelo sin cuotas pierde (@@roisin@@\,\%), porque cuando difiere del mercado suele ser el mercado quien tiene razón. El consenso directo contra Bet365 obtiene un ROI alto en validación y negativo en test; el diagnóstico por apuesta muestra ganancias concentradas en resultados de alta cuota. Sin capturas sincronizadas no se puede confirmar su ejecución. Predecir un poco mejor no basta para superar el margen que cobra la casa.
 """
     body += latex_figure('inf_backtest', 'fig:bt', 'Retorno por unidad apostada (punto) e intervalo del 95\\,\\% (línea) con la regla fija. Cero significa no ganar ni perder.')
     body += r"""
 \section{Discusión, limitaciones y ética}
 \label{sec:discusion}
-Los resultados confirman que el mercado de apuestas es muy eficiente. Con cuotas, el aprendizaje automático solo logra recalibrar el precio; sin cuotas, los datos deportivos públicos se acercan, pero no lo alcanzan. Tiene sentido: las casas combinan toda la información disponible, incluida la que nosotros no tenemos, y ajustan sus precios con el dinero de miles de apostadores.
+En estas ligas y periodos, el mercado constituye una referencia predictiva difícil de superar. El experimento no establece su eficiencia general. Con cuotas, el aprendizaje automático solo logra recalibrar el precio; sin cuotas, los datos deportivos públicos se acercan, pero no lo alcanzan. Tiene sentido: las casas combinan toda la información disponible, incluida la que nosotros no tenemos, y ajustan sus precios con el dinero de miles de apostadores.
 
-Otra lección es que los modelos simples resistieron. Con cuotas, una LR de dos variables ganó a la red neuronal y a la SVM; sin cuotas, un promedio simple ganó al stacking. En datos con tanto azar como el fútbol, la complejidad adicional se traduce más en sobreajuste que en mejores predicciones. También comprobamos que un accuracy parecido puede esconder diferencias de calibración: por eso conviene evaluar probabilidades con log loss y no solo con aciertos.
+Otra lección es que los modelos simples resistieron. Con cuotas, una LR de dos variables ganó a la red neuronal y a la SVM; sin cuotas, un promedio simple ganó al stacking. Con estas rejillas, la complejidad adicional no produjo mejores predicciones. El sobreajuste explica solo una parte: aparece en la red neuronal y en el bosque aleatorio, pero no en la SVM. También comprobamos que un accuracy parecido puede esconder diferencias de calibración: por eso conviene evaluar probabilidades con log loss y no solo con aciertos.
 
-\textbf{Limitaciones.} No tenemos alineaciones reales ni lesiones: las plantillas son las del videojuego y algunas valoraciones tienen más de un año. El historial solo incluye partidos de liga, no copas ni torneos europeos. Las cuotas no tienen la hora exacta de captura, por lo que las apuestas simuladas podrían no haber estado disponibles a esos precios. Las búsquedas de hiperparámetros son acotadas. Además, el periodo de test se había evaluado con una versión anterior del sistema, por lo que conviene confirmar los resultados con partidos de 2026/27. Por último, los resultados no se extrapolan a otras ligas ni deportes.
+\textbf{Limitaciones.} No tenemos alineaciones reales ni lesiones: las plantillas son las del videojuego y algunas valoraciones tienen más de un año. El historial solo incluye partidos de liga, no copas ni torneos europeos. Las cuotas no tienen la hora exacta de captura, por lo que las apuestas simuladas podrían no haber estado disponibles a esos precios. Las búsquedas de hiperparámetros son acotadas. La disponibilidad de cuotas cambia en el test: en 2024/25 Bet\&Win y William Hill cubren el @@cov_bw@@\,\% y el @@cov_wh@@\,\% de los partidos, y en 2025/26 el consenso depende solo de Bet365 y Bet\&Win. En esa última temporada no se usa Pinnacle, de modo que la LR recibe el consenso en lugar del precio con el que se entrenó y la referencia de Pinnacle coincide con el consenso. En los modelos de diferencia de goles, la conversión a probabilidades se aprende con una temporada apartada y luego el modelo se reentrena con todos los datos, lo que puede desajustar un poco esa conversión. Además, el periodo de test se había evaluado con una versión anterior del sistema, por lo que conviene confirmar los resultados con partidos de 2026/27. Por último, los resultados no se extrapolan a otras ligas ni deportes.
 
 \textbf{Ética.} Los datos se usan con fines académicos y no se redistribuyen. No se usan datos personales sensibles. Los equipos con menos historial o sin valoraciones tienen predicciones de menor calidad, por eso publicamos la cobertura en lugar de ocultarla. Las apuestas pueden generar adicción y pérdidas económicas: este análisis es experimental y no es una recomendación para apostar.
 
@@ -752,11 +789,11 @@ Otra lección es que los modelos simples resistieron. Con cuotas, una LR de dos 
 \label{sec:conclusiones}
 Construimos dos predictores con el mismo protocolo: uno que usa las cuotas y otro que solo usa datos deportivos. Las respuestas a las preguntas de investigación son:
 
-\textbf{P1 (con cuotas).} Sí, aunque por poco. Una LR que recalibra el precio reduce el log loss del consenso en @@d1@@ en validación (intervalo [@@d1lo@@; @@d1hi@@], mejora en @@d1s@@ de 6 temporadas) y en @@d3@@ en test. Frente a Pinnacle la mejora es de @@d2@@ en validación, no concluyente, y de @@d4@@ en test. El modelo no ordena mejor los partidos: solo corrige la calibración del mercado.
+\textbf{P1 (con cuotas).} Sí, aunque por poco. Una LR que recalibra el precio reduce el log loss del consenso en @@d1@@ en validación (intervalo [@@d1lo@@; @@d1hi@@], mejora en @@d1s@@ de 6 temporadas) y en @@d3@@ en test. Frente a Pinnacle con respaldo del consenso la mejora es de @@d2@@ en validación, no concluyente, y de @@d4@@ en test. La mejora observada se acompaña de menor error de calibración, con AUC similar.
 
 \textbf{P2 (sin cuotas).} Un promedio de modelos deportivos reproduce el @@frac@@\,\% de la mejora del mercado sobre el prior, con correlación @@corr@@ con sus probabilidades y el mismo favorito en el @@fav@@\,\% de los partidos, pero no lo supera. La plantilla aporta frente al historial solo; las habilidades individuales no añaden más.
 
-\textbf{P3.} MI y PCA no mejoran al mejor modelo de ningún enfoque. Combinar modelos ayuda sin cuotas, pero no con cuotas. Dar más peso a los partidos sorpresivos empeora siempre.
+\textbf{P3.} MI y PCA no mejoran al mejor modelo de ningún enfoque. Combinar modelos ayuda sin cuotas, pero no con cuotas. Dar más peso a los partidos sorpresivos empeora el log loss agregado de las variantes probadas, aunque no necesariamente en cada temporada.
 
 \textbf{P4.} Los resultados son estables: el modelo con cuotas supera al consenso en @@wins@@ de @@nseas@@ temporadas y el modelo sin cuotas queda detrás del mercado en todas. Predecir mejor no garantiza ganar dinero: el ROI del modelo con cuotas en test (@@roicon@@\,\%) tiene un intervalo que incluye pérdidas, y el del modelo sin cuotas es negativo.
 
@@ -764,8 +801,7 @@ Como trabajo futuro, proponemos incorporar alineaciones y lesiones confirmadas, 
 """
     for k, val_ in V.items(): body = body.replace('@@'+k+'@@', val_)
     assert '@@' not in body, body[body.index('@@')-50:body.index('@@')+50]
-    bibliography = old[old.index(r'\begin{thebibliography}'):]
-    bibliography = bibliography.replace('2025.\n\bibitem{kagglefifa}', 'consultado en noviembre de 2026.\n\bibitem{kagglefifa}')
+    bibliography = (templates/'bibliography.tex').read_text()
     preamble = preamble.replace(r'\usepackage[section]{placeins}', r'\usepackage{placeins}')
     for section in ('Resultados y análisis', 'Discusión, limitaciones y ética'):
         body = body.replace(r'\section{'+section+'}', r'\FloatBarrier'+'\n'+r'\section{'+section+'}')
@@ -846,7 +882,7 @@ def presentation(c):
           '<div class="kpis small">'+kpi('Resultados', 'historia de cada equipo: Elo, forma, goles')+kpi('Cuotas', 'Bet365, Bet&amp;Win, Pinnacle, William Hill')
           +kpi('Valoraciones FIFA/FC', 'plantilla y habilidades del once')+'</div>'
           +img('revision_datos', 'Distribución del resultado y cobertura de datos'),
-          'Cada partido usa solo la valoración publicada <b>antes</b> de su fecha; Pinnacle se excluye desde el 23/07/2025.',
+          'Cada partido usa valoraciones publicadas <b>antes</b> de su fecha. En 2025/26 el consenso usa solo Bet365 y Bet&amp;Win: Pinnacle se excluye desde el 23/07/2025 y William Hill ya no se publica.',
           '36.150 partidos originales · 31 sin cuotas · 2013/14 solo como calentamiento')
     # 5 · Protocolo: expanding window grid
     seasons = list(range(14, 26))
@@ -871,7 +907,7 @@ def presentation(c):
           '<tr><td>Local</td><td>2,10</td><td>0,476</td><td><b>45,4 %</b></td></tr><tr><td>Empate</td><td>3,40</td><td>0,294</td><td><b>28,1 %</b></td></tr>'
           '<tr><td>Visitante</td><td>3,60</td><td>0,278</td><td><b>26,5 %</b></td></tr><tr class="sum"><td>Suma</td><td></td><td>1,048</td><td>100 %</td></tr></tbody></table>'
           '<p class="hint">El 4,8 % que sobra es la ganancia de la casa; se reparte para que sume 100 %.</p></div>'
-          '<div class="stack"><div class="card"><h4>Baseline del mercado</h4><p>Consenso de casas y Pinnacle, sin aprendizaje.</p></div>'
+          '<div class="stack"><div class="card"><h4>Baseline del mercado</h4><p>Consenso y Pinnacle con respaldo del consenso, sin aprendizaje.</p></div>'
           '<div class="card"><h4>Modelos probados</h4><p>LR, HGB, XGBoost, Random Forest, red neuronal y SVM, con precio y datos deportivos.</p></div>'
           f'<div class="card con"><h4>Elegido: {con_name}</h4><p>Regresión logística con solo dos números del precio.</p></div></div></div>',
           'El modelo con cuotas no adivina desde cero: aprende a corregir el precio del mercado.', 'Ejemplo de cuotas ilustrativo')
@@ -915,8 +951,8 @@ def presentation(c):
           '<div class="two">'+img('revision_ensembles', 'Ensembles en ambos enfoques')+img('revision_reduccion', 'MI y PCA en ambos enfoques')+'</div>'
           '<div class="three"><div class="card"><h4>Ensembles</h4><p>Sin cuotas el promedio ayuda y es el elegido; con cuotas ninguno supera a la LR de solo precio.</p></div>'
           '<div class="card"><h4>MI y PCA</h4><p>Reducir variables no supera al mejor modelo en ningún enfoque.</p></div>'
-          '<div class="card"><h4>Más peso a sorpresas</h4><p>Pesos y remuestreo 50/50 empeoran siempre el log loss.</p></div></div>',
-          'Los modelos simples resistieron: con tanto azar, la complejidad extra lleva a sobreajuste.',
+          '<div class="card"><h4>Más peso a sorpresas</h4><p>Pesos y remuestreo 50/50 empeoran el log loss agregado; no necesariamente cada temporada.</p></div></div>',
+          'Los modelos simples obtuvieron los mejores resultados: con estas rejillas, más complejidad no mejoró las predicciones.',
           'Barras: cambio de log loss frente a la LR con todas las variables (negativo es mejor)')
     # 12 · Money
     slide('Resultados', 'Predecir mejor no garantiza ganar dinero',
@@ -932,8 +968,8 @@ def presentation(c):
           f'<div class="card sin">{tag("P2 · sin cuotas", "sin")}<p>Logramos el <b>{frac:.0f} %</b> de la ventaja del mercado sobre el prior, sin superarlo. La plantilla ayuda; las habilidades no suman más.</p></div>'
           f'<div class="card">{tag("P3 · técnicas")}<p>MI y PCA no mejoran. El <b>promedio de modelos</b> ayuda sin cuotas; dar más peso a las sorpresas empeora.</p></div>'
           f'<div class="card">{tag("P4 · estabilidad y dinero")}<p>Con cuotas supera al consenso en <b>{wins} de {len(bs)}</b> temporadas, pero el ROI de {r_con} tiene un intervalo con pérdidas.</p></div></div>'
-          '<p class="limits">Límites: valoraciones del videojuego y no alineaciones reales, solo partidos de liga y cuotas sin hora exacta de captura.</p>',
-          'El mercado es muy eficiente: el aprendizaje automático lo afina y un modelo deportivo se le acerca mucho.',
+          '<p class="limits">Límites: valoraciones del videojuego y no alineaciones reales, solo liga, cuotas sin hora de captura y cambio de Pinnacle al consenso de dos casas.</p>',
+          'El mercado es una referencia fuerte en este experimento; el aprendizaje mejora ligeramente su calibración.',
           '¡Gracias! · Preguntas · github.com/jcarlos-t/MLProject')
     style = '''
 /* Layout: 16:9 slides, a section tracker on top, one assertion title, one visual, one takeaway line.
@@ -1033,8 +1069,37 @@ fit();show();'''
         +fonts+'<style>'+style+'</style></head><body><main id="stage">'+''.join(slides)+'</main>'+controls+'<script>'+script+'</script></body></html>')
 
 
+def ensure_draw_results(out):
+    from .data import sha
+    import subprocess, sys
+    pointer = ROOT/'scripts/data/draw_actual.txt'
+    valid = False
+    if pointer.exists():
+        run = ROOT/pointer.read_text().strip()
+        try:
+            identity = json.loads((run/'protocol.json').read_text())
+            marker = json.loads((run/'complete.json').read_text())
+            valid = (identity['parent_run'] == out.name
+                and all(sha(ROOT/'scripts'/name) == digest for name, digest in identity['sources'].items())
+                and all(sha(out/name) == digest for name, digest in identity['inputs'].items())
+                and marker['metrics_sha'] == sha(run/'metrics.csv')
+                and marker['predictions_sha'] == sha(run/'test_predictions.csv')
+                and marker['frozen_sha'] == sha(run/'frozen.json'))
+        except (OSError, ValueError, KeyError):
+            pass
+    if not valid:
+        if out.resolve() != current().resolve():
+            raise ValueError('El experimento de empates debe corresponder a la ejecución solicitada')
+        subprocess.run([sys.executable, str(ROOT/'scripts/experiment_draws.py')], check=True)
+
+
 def render(out=None):
     out = out or current(); c = context(out)
+    if not (out/'importance_groups.csv').exists() or not (out/'validation_diagnostics.csv').exists():
+        validation_diagnostics(out)
+    ensure_draw_results(out)
+    from audit_results import audit
+    audit(out)
     if not (out/'market_guided_comparisons.csv').exists(): development_comparisons(out)
     figures(c); paper(c); presentation(c)
     # Both deliverables draw from exactly this exported table.

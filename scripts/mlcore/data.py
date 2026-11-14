@@ -249,7 +249,6 @@ def market_features(d):
 
 
 def prepare(out):
-    verify_inputs()
     _, availability = verify_inputs()
     d = load_matches()
     squads = squad_snapshots(availability)
